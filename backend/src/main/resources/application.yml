@@ -1,0 +1,54 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: tallerpro-backend
+
+  # --- Conexion al contenedor Docker tallerpro-mysql ---
+  datasource:
+    url: jdbc:mysql://localhost:3306/tallerpro?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Mexico_City
+    username: tallerpro
+    password: tallerpro_dev_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # 'validate': el esquema lo crea y versiona Flyway, no Hibernate.
+      # Asi evitamos que JPA "adivine" columnas y se desincronice del historial de migraciones.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  mail:
+    # Placeholder: mientras no se configure un SMTP real, el "envio" de correos de
+    # recuperacion de contrasena solo se registra en el log (ver ConsoleMailService).
+    host: localhost
+    port: 1025
+
+# --- Configuracion propia de la app ---
+tallerpro:
+  jwt:
+    # En un entorno real esta clave NUNCA va en el repositorio: se mueve a una
+    # variable de entorno (JWT_SECRET) o a un vault. Aqui se deja explicita para
+    # que el proyecto funcione de inmediato en tu maquina de desarrollo.
+    secret: "cambia-esta-clave-super-secreta-antes-de-produccion-min-32-chars"
+    expiracion-minutos: 30
+  seguridad:
+    max-intentos-fallidos: 5
+    minutos-bloqueo: 15
+  reset-password:
+    minutos-expiracion: 30
+    url-frontend: "http://localhost:5173/restablecer-password"
+
+logging:
+  level:
+    com.tallerpro.backend: DEBUG
+    org.hibernate.SQL: DEBUG
