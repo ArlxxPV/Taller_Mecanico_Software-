@@ -28,7 +28,7 @@ Esta primera fase (el propio proyecto la llama **"Módulo 1: identidad, usuarios
 - Manejo de sesión en el navegador (guardar/borrar el token, proteger rutas que requieren estar autenticado).
 
 **Conexiones**
-- El frontend (Vite, puerto `5173`) se comunica con el backend (Spring Boot, puerto `8081` según `application.yml`; el `README.md` menciona `8080`, ver nota en la sección 2) mediante peticiones HTTP con Axios, usando el token JWT en cada petición.
+- El frontend (Vite, puerto `5173`) se comunica con el backend (Spring Boot, puerto `8081`) mediante peticiones HTTP con Axios, usando el token JWT en cada petición.
 - El backend se conecta a una base de datos **MySQL** que corre en un contenedor Docker llamado `tallerpro-mysql`.
 
 ---
@@ -44,7 +44,7 @@ Esta primera fase (el propio proyecto la llama **"Módulo 1: identidad, usuarios
 | **Frontend** | Vue 3 + Vite + Vue Router + Pinia (estado global) + Axios + Tailwind CSS + PrimeVue (componentes visuales) |
 | **Base de datos** | MySQL 8.4, corriendo en un contenedor Docker (`tallerpro-mysql`) |
 
-> ⚠️ Nota encontrada: el `README.md` dice que el backend queda en `http://localhost:8080`, pero `backend/src/main/resources/application.yml` tiene configurado `server.port: 8081`. Antes de publicar o compartir el proyecto conviene igualar ambos datos para que la documentación no confunda a quien lo levante.
+> ✅ Resuelto: el `README.md` decía que el backend queda en `http://localhost:8080`, pero `application.yml` tiene configurado `server.port: 8081`. Ya se corrigió el `README.md` para que diga `8081` en todos los lugares donde aparecía.
 
 ### Módulos que lo componen
 1. **Identidad / autenticación** (completo en esta fase): registro, login, recuperación de contraseña, roles, bloqueo por intentos fallidos, bitácora de accesos.
@@ -117,7 +117,7 @@ tallerpro/
 | `BackendApplication.java` | Punto de entrada de la aplicación Spring Boot. |
 | `SecurityConfig.java` | Define qué rutas de la API son públicas (`/api/auth/**`) y cuáles requieren estar autenticado o tener rol `ADMIN`/`EMPLEADO` (`/api/usuarios/**`). También configura CORS (qué dominios pueden llamar a la API — hoy solo `http://localhost:5173`), desactiva CSRF (protección que no aplica porque la API no usa cookies de sesión) y define que las contraseñas se cifran con **Argon2**. |
 | `JwtProperties.java`, `SeguridadProperties.java`, `ResetPasswordProperties.java` | Leen valores desde `application.yml` (clave JWT, minutos de expiración, intentos máximos, etc.) y los exponen como objetos Java listos para usar en el resto del código. |
-| `DataSeeder.java` | Al arrancar el backend, si no existe ningún usuario `admin@tallerpro.mx`, lo crea automáticamente con una contraseña inicial (ver sección 5 — no se repite aquí por seguridad). |
+| `DataSeeder.java` | Al arrancar el backend, si no existe ningún usuario `admin@tallerpro.mx`, lo crea automáticamente con una contraseña inicial fija escrita en el código (decisión consciente: se dejó así, sin generarla al azar; ver sección 5). |
 
 #### Seguridad (`security/`)
 | Archivo | Qué hace |
@@ -187,42 +187,33 @@ Estos scripts los ejecuta **Flyway** automáticamente al arrancar el backend; no
 
 **No se incluye ningún valor real de usuario, contraseña o clave en este documento**, tal como se pidió. Solo la ubicación y los nombres de las variables.
 
-| Archivo | Ruta | Variables que contiene |
-|---|---|---|
-| `application.yml` | `backend/src/main/resources/application.yml` | `spring.datasource.url`, `spring.datasource.username`, `spring.datasource.password`, `spring.datasource.driver-class-name` (conexión a MySQL) y también `tallerpro.jwt.secret` (la clave con la que se firman los tokens de sesión — **también es una credencial sensible**, aunque no es de la base de datos). |
-| `.env` | `frontend/.env` | `VITE_API_BASE_URL` (no es una credencial, es solo la URL del backend, pero vive en el mismo tipo de archivo que normalmente se usa para datos sensibles). |
+### ⚠️ Hallazgo original (ya corregido, se documenta para que quede el registro)
 
-### ⚠️ Hallazgo importante: estos archivos NO están protegidos
+Al revisar el proyecto encontré que `backend/src/main/resources/application.yml` y `frontend/.env` tenían las credenciales reales escritas en texto plano, que ninguno de los tres `.gitignore` del proyecto los excluía, y que **ambos ya estaban subidos a GitHub** — en un repositorio **público**. Es decir, la contraseña de MySQL, la clave con la que se firman los tokens de sesión (JWT) y la contraseña inicial del usuario admin (`Admin123!`, escrita también en el `README.md`) quedaron expuestas.
 
-Revisé los tres `.gitignore` del proyecto (raíz, `backend/`, `frontend/`) y **ninguno excluye `application.yml` ni `.env`**. Además, confirmé con `git ls-files` que **ambos archivos ya están siendo rastreados por Git** — es decir, ya se subieron al repositorio (`git log` muestra que están incluidos desde el primer commit y el último, y la rama `main` local está sincronizada con `origin/main`, así que **ya están en GitHub**).
+### ✅ Qué se hizo para resolverlo
 
-En resumen: la contraseña de la base de datos y la clave con la que se firman los tokens de sesión están, en este momento, visibles en tu repositorio de GitHub.
+1. **Se rotaron las credenciales expuestas** (dejan de servir las que estaban en GitHub):
+   - Nueva contraseña para el usuario `tallerpro` de MySQL (cambiada directo en el contenedor, verificada con una conexión real).
+   - Nueva clave JWT (32+ caracteres aleatorios).
+   - Nueva contraseña para `admin@tallerpro.mx` (usando el propio flujo de "olvidé mi contraseña" del sistema; se verificó con un login real).
+2. **Se sacaron los valores del archivo que se sube a GitHub.** `application.yml` ya no tiene usuario, contraseña ni clave JWT escritos: ahora los importa desde un archivo nuevo, `application-secrets.yml`, agregado a `.gitignore` (nunca se sube). `frontend/.env` también quedó fuera del control de versiones (se usó `git rm --cached`, así que sigue en el disco pero ya no viaja con el repositorio).
+3. **Se dejaron plantillas sin datos reales** para que el proyecto lo pueda levantar cualquier otra persona: `backend/src/main/resources/application-secrets.yml.example` y `frontend/.env.example`, ambas sí incluidas en el repositorio.
+4. **Se limpió el `README.md`**: ya no menciona la contraseña del admin ni la de MySQL; en su lugar explica cómo copiar los archivos `.example` y llenarlos con datos propios.
 
-**Cómo protegerlo de aquí en adelante:**
+### Cómo queda la configuración de aquí en adelante
 
-1. Agrega estas líneas a un `.gitignore` en la raíz del proyecto (créalo si no existe):
-   ```
-   backend/src/main/resources/application.yml
-   frontend/.env
-   ```
-2. Deja en el repositorio una **versión de ejemplo** sin datos reales, para que cualquiera sepa qué variables debe llenar (por ejemplo `application.yml.example` y `frontend/.env.example`), con valores tipo `tu_usuario_aqui`.
-3. Saca esos archivos del control de versiones (esto NO los borra de tu disco, solo deja de rastrearlos):
-   ```
-   git rm --cached backend/src/main/resources/application.yml
-   git rm --cached frontend/.env
-   ```
-4. Como esas credenciales **ya se subieron a GitHub**, lo más seguro es **cambiarlas** (nueva contraseña de MySQL y un nuevo valor para `tallerpro.jwt.secret`), en vez de confiar en que borrarlas del historial sea suficiente. Si el repositorio es público, considera esas credenciales ya expuestas.
-5. En vez de escribir los valores reales directamente en `application.yml`, Spring Boot puede leerlos desde variables de entorno del sistema operativo sin cambiar nada de lógica, por ejemplo:
-   ```yaml
-   spring:
-     datasource:
-       username: ${DB_USERNAME}
-       password: ${DB_PASSWORD}
-   tallerpro:
-     jwt:
-       secret: ${JWT_SECRET}
-   ```
-   Así, el archivo que sí se sube a GitHub no contiene ningún valor sensible; los valores reales se configuran por separado en tu máquina o en la plataforma donde publiques el backend (ver sección 6).
+| Archivo | Ruta | ¿Se sube a GitHub? | Contiene |
+|---|---|---|---|
+| `application.yml` | `backend/src/main/resources/application.yml` | Sí | Configuración general; ya sin credenciales. Importa `application-secrets.yml` con `spring.config.import`. |
+| `application-secrets.yml` | `backend/src/main/resources/application-secrets.yml` | **No** (en `.gitignore`) | `spring.datasource.username`, `spring.datasource.password`, `tallerpro.jwt.secret` — los valores reales. |
+| `application-secrets.yml.example` | `backend/src/main/resources/` | Sí | Misma estructura, con valores de ejemplo (`tu_usuario_aqui`, etc.). |
+| `.env` | `frontend/.env` | **No** (en `.gitignore`) | `VITE_API_BASE_URL` con el valor real. |
+| `.env.example` | `frontend/.env.example` | Sí | Misma variable, con un valor de ejemplo. |
+
+### Pendiente, por decisión propia (no es un error, es una aceptación de riesgo)
+
+`DataSeeder.java` sigue creando al usuario admin con una contraseña inicial **fija**, escrita en el código fuente (que es público). Se evaluó cambiarla por una generada al azar en cada arranque, pero se decidió **dejarla como está**. Mientras el proyecto siga así, cualquiera que lea el código puede ver cuál es esa contraseña inicial — el riesgo se mitiga cambiándola manualmente apenas se inicia sesión por primera vez (como ya se hizo en la instancia actual).
 
 ---
 
@@ -268,10 +259,9 @@ El frontend se compila a archivos estáticos (`npm run build`), así que puede p
 
 ## Próximos pasos recomendados (Fase 2)
 
-1. Cambiar la contraseña de MySQL y la clave JWT (ver sección 5) antes de seguir trabajando, ya que quedaron expuestas en GitHub.
-2. Sacar `application.yml` y `.env` del control de versiones y mover sus valores reales a variables de entorno.
-3. Construir los endpoints y pantallas de **clientes y vehículos** (el modelo de datos ya existe).
-4. Conectar un proveedor SMTP real para el correo de recuperación de contraseña.
-5. Agregar la pantalla administrativa para asignar el rol `EMPLEADO`.
-6. Definir y construir el módulo de **órdenes de reparación** (no existe código todavía).
-7. Corregir la discrepancia de puerto entre `README.md` (8080) y `application.yml` (8081).
+1. Subir a GitHub los cambios de seguridad ya hechos localmente (`.gitignore`, `application.yml`, `README.md`, los `.example`) — quedan listos, solo falta el `commit`/`push`.
+2. Construir los endpoints y pantallas de **clientes y vehículos** (el modelo de datos ya existe).
+3. Conectar un proveedor SMTP real para el correo de recuperación de contraseña.
+4. Agregar la pantalla administrativa para asignar el rol `EMPLEADO`.
+5. Definir y construir el módulo de **órdenes de reparación** (no existe código todavía).
+6. Evaluar si vale la pena cambiar `DataSeeder.java` para que la contraseña inicial del admin se genere al azar (ver sección 5) — quedó pendiente por decisión propia, no técnica.
