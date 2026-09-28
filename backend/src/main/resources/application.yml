@@ -5,11 +5,15 @@ spring:
   application:
     name: tallerpro-backend
 
+  # Carga las credenciales reales desde application-secrets.yml (ignorado por
+  # git). Si ese archivo no existe todavia, "optional:" evita que el arranque
+  # falle; copia application-secrets.yml.example y llena tus valores reales.
+  config:
+    import: "optional:application-secrets.yml"
+
   # --- Conexion al contenedor Docker tallerpro-mysql ---
   datasource:
     url: jdbc:mysql://localhost:3306/tallerpro?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Mexico_City
-    username: tallerpro
-    password: tallerpro_dev_password
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -36,10 +40,7 @@ spring:
 # --- Configuracion propia de la app ---
 tallerpro:
   jwt:
-    # En un entorno real esta clave NUNCA va en el repositorio: se mueve a una
-    # variable de entorno (JWT_SECRET) o a un vault. Aqui se deja explicita para
-    # que el proyecto funcione de inmediato en tu maquina de desarrollo.
-    secret: "cambia-esta-clave-super-secreta-antes-de-produccion-min-32-chars"
+    # El valor real vive en application-secrets.yml (ignorado por git).
     expiracion-minutos: 30
   seguridad:
     max-intentos-fallidos: 5

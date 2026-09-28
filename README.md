@@ -99,19 +99,21 @@ docker start tallerpro-mysql
 Desde VS Code, abre la carpeta `backend/` (con la extensión "Extension Pack for Java" instalada),
 o desde una terminal:
 
+Antes de arrancar, copia `backend/src/main/resources/application-secrets.yml.example` como
+`application-secrets.yml` (en esa misma carpeta) y pon ahí tus credenciales reales de MySQL y
+una clave JWT propia — ese archivo está en `.gitignore`, nunca se sube al repositorio.
+
 ```bash
 cd backend
-./mvnw spring-boot:run
+mvn spring-boot:run
 ```
 
-> Si no tienes el wrapper de Maven (`mvnw`) generado, corre una vez `mvn wrapper:wrapper`
-> dentro de `backend/` (requiere tener Maven instalado), o usa `mvn spring-boot:run` directamente
-> si ya tienes Maven en tu equipo.
-
 Al arrancar, Flyway crea las tablas y en el log verás el bloque `USUARIO ADMIN CREADO` con las
-credenciales iniciales. El backend queda escuchando en `http://localhost:8080`.
+credenciales iniciales. El backend queda escuchando en `http://localhost:8081`.
 
 ## 6. Levantar el frontend
+
+Copia también `frontend/.env.example` como `frontend/.env` (tampoco se sube al repositorio).
 
 ```bash
 cd frontend
@@ -119,22 +121,24 @@ npm install
 npm run dev
 ```
 
-Se abre en `http://localhost:5173`. Ya viene apuntando al backend en `localhost:8080`
+Se abre en `http://localhost:5173`. Ya viene apuntando al backend en `localhost:8081`
 (ver `frontend/.env`).
 
-**Para probarlo de inmediato:** entra a `http://localhost:5173/login` y usa:
-- Correo: `admin@tallerpro.mx`
-- Contraseña: `Admin123!`
+**Para probarlo de inmediato:** entra a `http://localhost:5173/login` con el correo
+`admin@tallerpro.mx`. La contraseña inicial está definida en
+`backend/src/main/java/com/tallerpro/backend/config/DataSeeder.java` (no se repite aquí a
+propósito, para no dejarla en texto plano en el repositorio). **Cámbiala de inmediato** desde
+"Olvidé mi contraseña" apenas inicies sesión la primera vez.
 
 O crea una cuenta nueva desde "Crea una cuenta" (queda con rol `CLIENTE`).
 
 ## 7. Comprobar que el registro y el login sí escriben/leen en MySQL
 
-Entra al cliente de MySQL dentro del contenedor:
+Entra al cliente de MySQL dentro del contenedor (te pedirá la contraseña que hayas puesto en
+`application-secrets.yml`):
 
 ```bash
 docker exec -it tallerpro-mysql mysql -u tallerpro -p tallerpro
-# contraseña: tallerpro_dev_password
 ```
 
 Y dentro de la sesión de MySQL:

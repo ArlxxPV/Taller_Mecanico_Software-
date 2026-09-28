@@ -1,0 +1,3 @@
+# Credenciales y configuración local — nunca deben subirse al repositorio.
+backend/src/main/resources/application-secrets.yml
+frontend/.env
