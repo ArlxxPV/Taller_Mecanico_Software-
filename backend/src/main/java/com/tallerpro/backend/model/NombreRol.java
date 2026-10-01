@@ -9,5 +9,6 @@ package com.tallerpro.backend.model;
 public enum NombreRol {
     ADMIN,
     EMPLEADO,
-    CLIENTE
+    CLIENTE,
+    RECEPCIONISTA
 }

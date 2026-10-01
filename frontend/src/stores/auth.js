@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
-import { authService } from '../services/authService'
 
+// Store: solo guarda el estado de la sesion (token, usuario) y lo persiste
+// en localStorage. No hace peticiones HTTP: eso es trabajo del Facade,
+// a traves del Repository.
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('tallerpro_token') || null,
@@ -13,26 +15,17 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    async login(credenciales) {
-      const { data } = await authService.login(credenciales)
-      this.token = data.token
-      this.usuario = data.usuario
-      localStorage.setItem('tallerpro_token', data.token)
-      return data
+    establecerSesion(token, usuario) {
+      this.token = token
+      this.usuario = usuario
+      localStorage.setItem('tallerpro_token', token)
     },
 
-    async registrar(datos) {
-      return authService.registrar(datos)
+    establecerUsuario(usuario) {
+      this.usuario = usuario
     },
 
-    async cargarPerfil() {
-      if (!this.token) return null
-      const { data } = await authService.obtenerPerfil()
-      this.usuario = data
-      return data
-    },
-
-    cerrarSesion() {
+    limpiarSesion() {
       this.token = null
       this.usuario = null
       localStorage.removeItem('tallerpro_token')

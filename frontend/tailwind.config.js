@@ -5,21 +5,21 @@ export default {
     extend: {
       colors: {
         // Paleta "blueprint": todo en tonos de azul, del mas oscuro (ink) al
-        // mas claro (paper). Elegida a proposito para que combine con el
-        // rubro del taller: los planos tecnicos/mecanicos son azules.
+        // mas claro (paper). Valores tomados con muestreo de pixeles exacto
+        // de las imagenes de referencia (sistema-gestion-talleres), no a ojo.
         ink: '#0B1E36',
-        deep: '#123A6B',
+        deep: '#0A1F47',
         primary: {
-          DEFAULT: '#2A5CDB',
-          hover: '#2450BE',
-          light: '#5B86EA'
+          DEFAULT: '#1D4ED8',
+          hover: '#1E40AF',
+          light: '#3B82F6'
         },
-        accent: '#3FA9F5',
-        mist: '#DCEBFB',
-        paper: '#F5F9FF'
+        accent: '#38BDF8',
+        mist: '#DBEAFE',
+        paper: '#EFF6FF'
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'sans-serif'],
+        display: ['"Plus Jakarta Sans"', 'sans-serif'],
         body: ['"IBM Plex Sans"', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace']
       }

@@ -1,24 +1,26 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { authService } from '../services/authService'
+import { useToast } from 'primevue/usetoast'
+import { authFacade } from '../facades/authFacade'
 import AuthLayout from '../components/AuthLayout.vue'
+
+const toast = useToast()
 
 const email = ref('')
 const cargando = ref(false)
 const enviado = ref(false)
-const error = ref('')
 
 async function enviar() {
-  error.value = ''
   cargando.value = true
-  try {
-    await authService.olvidePassword(email.value)
+  const resultado = await authFacade.olvidePassword(email.value)
+  cargando.value = false
+
+  if (resultado.ok) {
     enviado.value = true
-  } catch {
-    error.value = 'No se pudo procesar la solicitud. Intenta de nuevo en unos minutos.'
-  } finally {
-    cargando.value = false
+    toast.add({ severity: 'success', summary: 'Solicitud enviada', detail: resultado.mensaje, life: 3000 })
+  } else {
+    toast.add({ severity: 'error', summary: 'No se pudo procesar', detail: resultado.mensaje, life: 4000 })
   }
 }
 </script>
@@ -39,8 +41,6 @@ async function enviar() {
         <input id="email" v-model="email" type="email" required autocomplete="email"
                class="campo-tallerpro" placeholder="tu@correo.com" />
       </div>
-
-      <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
       <button type="submit" class="boton-primario" :disabled="cargando">
         {{ cargando ? 'Enviando...' : 'Enviar enlace de recuperacion' }}

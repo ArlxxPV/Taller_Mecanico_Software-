@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { authFacade } from '../facades/authFacade'
 
 const routes = [
   {
@@ -35,6 +36,30 @@ const routes = [
     name: 'panel',
     component: () => import('../views/DashboardView.vue'),
     meta: { requiereAuth: true }
+  },
+  {
+    path: '/clientes',
+    name: 'clientes-lista',
+    component: () => import('../views/ClienteListaView.vue'),
+    meta: { requiereAuth: true, rolesPermitidos: ['ADMIN', 'RECEPCIONISTA'] }
+  },
+  {
+    path: '/clientes/nuevo',
+    name: 'clientes-nuevo',
+    component: () => import('../views/ClienteRegistroView.vue'),
+    meta: { requiereAuth: true, rolesPermitidos: ['ADMIN', 'RECEPCIONISTA'] }
+  },
+  {
+    path: '/clientes/:id',
+    name: 'clientes-detalle',
+    component: () => import('../views/ClienteDetalleView.vue'),
+    meta: { requiereAuth: true, rolesPermitidos: ['ADMIN', 'RECEPCIONISTA'] }
+  },
+  {
+    path: '/clientes/:id/editar',
+    name: 'clientes-editar',
+    component: () => import('../views/ClienteEditarView.vue'),
+    meta: { requiereAuth: true, rolesPermitidos: ['ADMIN', 'RECEPCIONISTA'] }
   }
 ]
 
@@ -43,7 +68,7 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
   if (to.meta.requiereAuth && !auth.estaAutenticado) {
@@ -52,6 +77,20 @@ router.beforeEach((to) => {
   if (to.meta.soloInvitado && auth.estaAutenticado) {
     return { name: 'panel' }
   }
+
+  if (to.meta.rolesPermitidos) {
+    // El rol viaja en el perfil (auth.usuario), que solo se carga al entrar
+    // al panel. Si se navega directo a una ruta con roles (URL escrita a
+    // mano, recargar la pagina), lo pedimos aqui para poder autorizar.
+    if (!auth.usuario) {
+      await authFacade.cargarPerfil()
+    }
+    const autorizado = auth.rolesUsuario.some((rol) => to.meta.rolesPermitidos.includes(rol))
+    if (!autorizado) {
+      return { name: 'panel' }
+    }
+  }
+
   return true
 })
 

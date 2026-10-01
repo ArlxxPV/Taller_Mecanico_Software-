@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TallerPro — Diagrama de componentes (Vista → Facade → Repository → API)</title>
+<style>
+  :root {
+    --ink: #0B1E36;
+    --deep: #123A6B;
+    --primary: #2A5CDB;
+    --primary-hover: #2450BE;
+    --accent: #3FA9F5;
+    --mist: #DCEBFB;
+    --paper: #F5F9FF;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    padding: 32px 16px 64px;
+  }
+  .contenedor {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+  p.subtitulo {
+    color: rgba(11, 30, 54, 0.65);
+    margin-top: 0;
+    margin-bottom: 28px;
+    max-width: 720px;
+  }
+  .lienzo {
+    background: white;
+    border: 1px solid var(--mist);
+    border-radius: 16px;
+    padding: 8px;
+    overflow-x: auto;
+  }
+  svg { display: block; min-width: 900px; }
+  .leyenda {
+    margin-top: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-size: 0.85rem;
+  }
+  .leyenda-item { display: flex; align-items: center; gap: 8px; }
+  .muestra { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+  .nota {
+    margin-top: 28px;
+    font-size: 0.85rem;
+    color: rgba(11, 30, 54, 0.65);
+    line-height: 1.5;
+  }
+  .nota code {
+    background: var(--mist);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+  }
+</style>
+</head>
+<body>
+  <div class="contenedor">
+    <h1>TallerPro — Flujo Vista → Facade → Repository → API</h1>
+    <p class="subtitulo">
+      Diagrama de componentes del frontend (Vue 3) mostrando cómo llega una acción del usuario
+      hasta el backend, para los módulos de <strong>cuentas</strong> (fase 1) y
+      <strong>registro de clientes</strong> (fase 2).
+    </p>
+
+    <div class="lienzo">
+      <svg viewBox="0 0 1080 760" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Diagrama de capas: Vistas, Facades, Store, Repositories, cliente HTTP y API REST">
+        <defs>
+          <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#2A5CDB" />
+          </marker>
+          <marker id="flecha-gris" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#8AA3C4" />
+          </marker>
+        </defs>
+
+        <!-- ===================== FILA 1: VISTAS ===================== -->
+        <text x="40" y="34" font-size="13" font-weight="700" fill="#123A6B">VISTAS (Vue) — solo hablan con el Facade</text>
+
+        <g font-size="12" fill="#0B1E36">
+          <!-- fase 1 -->
+          <rect x="40"  y="46" width="150" height="46" rx="10" fill="#DCEBFB" stroke="#2A5CDB" stroke-width="1.4"/>
+          <text x="115" y="65" text-anchor="middle" font-weight="600">LoginView</text>
+          <text x="115" y="80" text-anchor="middle" font-size="10" fill="#123A6B">fase 1</text>
+
+          <rect x="204" y="46" width="150" height="46" rx="10" fill="#DCEBFB" stroke="#2A5CDB" stroke-width="1.4"/>
+          <text x="279" y="65" text-anchor="middle" font-weight="600">RegisterView</text>
+          <text x="279" y="80" text-anchor="middle" font-size="10" fill="#123A6B">fase 1</text>
+
+          <rect x="368" y="46" width="160" height="46" rx="10" fill="#DCEBFB" stroke="#2A5CDB" stroke-width="1.4"/>
+          <text x="448" y="65" text-anchor="middle" font-weight="600" font-size="11">ForgotPasswordView</text>
+          <text x="448" y="80" text-anchor="middle" font-size="10" fill="#123A6B">fase 1</text>
+
+          <rect x="542" y="46" width="160" height="46" rx="10" fill="#DCEBFB" stroke="#2A5CDB" stroke-width="1.4"/>
+          <text x="622" y="65" text-anchor="middle" font-weight="600" font-size="11">ResetPasswordView</text>
+          <text x="622" y="80" text-anchor="middle" font-size="10" fill="#123A6B">fase 1</text>
+
+          <rect x="716" y="46" width="150" height="46" rx="10" fill="#DCEBFB" stroke="#2A5CDB" stroke-width="1.4"/>
+          <text x="791" y="65" text-anchor="middle" font-weight="600">DashboardView</text>
+          <text x="791" y="80" text-anchor="middle" font-size="10" fill="#123A6B">fase 1</text>
+
+          <!-- fase 2 -->
+          <rect x="880" y="46" width="160" height="46" rx="10" fill="#FDECEA" stroke="#D0463A" stroke-width="1.4"/>
+          <text x="960" y="65" text-anchor="middle" font-weight="600" font-size="11">ClienteRegistroView</text>
+          <text x="960" y="80" text-anchor="middle" font-size="10" fill="#8A2E25">fase 2 — ADMIN/RECEPCIONISTA</text>
+        </g>
+
+        <!-- ===================== FILA 2: FACADES ===================== -->
+        <text x="40" y="150" font-size="13" font-weight="700" fill="#123A6B">FACADES — orquestan Repository + Store, devuelven { ok, mensaje, detalles }</text>
+
+        <rect x="150" y="162" width="330" height="54" rx="10" fill="#2A5CDB" />
+        <text x="315" y="184" text-anchor="middle" fill="white" font-weight="700" font-size="13">authFacade</text>
+        <text x="315" y="201" text-anchor="middle" fill="#DCEBFB" font-size="10">registrar · login · cargarPerfil · cerrarSesion · olvidePassword · restablecerPassword</text>
+
+        <rect x="620" y="162" width="300" height="54" rx="10" fill="#B4302A" />
+        <text x="770" y="184" text-anchor="middle" fill="white" font-weight="700" font-size="13">clienteFacade</text>
+        <text x="770" y="201" text-anchor="middle" fill="#FCE4E1" font-size="10">registrar(formulario, foto)</text>
+
+        <!-- Store lateral -->
+        <rect x="960" y="150" width="100" height="80" rx="10" fill="white" stroke="#8AA3C4" stroke-width="1.3" stroke-dasharray="4 3"/>
+        <text x="1010" y="172" text-anchor="middle" font-size="11" font-weight="700" fill="#123A6B">Store</text>
+        <text x="1010" y="186" text-anchor="middle" font-size="9.5" fill="#123A6B">(Pinia)</text>
+        <text x="1010" y="200" text-anchor="middle" font-size="9" fill="#123A6B">token</text>
+        <text x="1010" y="212" text-anchor="middle" font-size="9" fill="#123A6B">usuario</text>
+
+        <!-- ===================== FILA 3: REPOSITORIES ===================== -->
+        <text x="40" y="290" font-size="13" font-weight="700" fill="#123A6B">REPOSITORIES — unico lugar que arma cada peticion REST</text>
+
+        <rect x="150" y="302" width="330" height="46" rx="10" fill="#5B86EA" />
+        <text x="315" y="330" text-anchor="middle" fill="white" font-weight="700" font-size="13">authRepository</text>
+
+        <rect x="620" y="302" width="300" height="46" rx="10" fill="#D0655C" />
+        <text x="770" y="330" text-anchor="middle" fill="white" font-weight="700" font-size="13">clienteRepository</text>
+
+        <!-- ===================== FILA 4: HTTP CLIENT ===================== -->
+        <rect x="330" y="392" width="420" height="44" rx="10" fill="white" stroke="#123A6B" stroke-width="1.4"/>
+        <text x="540" y="412" text-anchor="middle" font-weight="700" font-size="12">http.js (Axios)</text>
+        <text x="540" y="426" text-anchor="middle" font-size="9.5" fill="#123A6B">agrega el JWT a cada peticion · limpia el token si el backend responde 401</text>
+
+        <!-- ===================== FILA 5: API REST ===================== -->
+        <text x="40" y="490" font-size="13" font-weight="700" fill="#123A6B">API REST (Spring Boot) — ya existia para fase 1; /api/clientes se creo para fase 2</text>
+
+        <rect x="60"  y="502" width="280" height="70" rx="10" fill="#0B1E36" />
+        <text x="200" y="524" text-anchor="middle" fill="white" font-weight="700" font-size="12">AuthController</text>
+        <text x="200" y="540" text-anchor="middle" fill="#B7C6DE" font-size="9.5">/api/auth/registro · login</text>
+        <text x="200" y="554" text-anchor="middle" fill="#B7C6DE" font-size="9.5">olvide-password · restablecer-password</text>
+
+        <rect x="360" y="502" width="240" height="70" rx="10" fill="#0B1E36" />
+        <text x="480" y="524" text-anchor="middle" fill="white" font-weight="700" font-size="12">UsuarioController</text>
+        <text x="480" y="540" text-anchor="middle" fill="#B7C6DE" font-size="9.5">GET /api/usuarios/yo</text>
+        <text x="480" y="554" text-anchor="middle" fill="#B7C6DE" font-size="9.5">(requiere sesion)</text>
+
+        <rect x="620" y="502" width="280" height="70" rx="10" fill="#5A130F" />
+        <text x="760" y="524" text-anchor="middle" fill="white" font-weight="700" font-size="12">ClienteController</text>
+        <text x="760" y="540" text-anchor="middle" fill="#F6CFC9" font-size="9.5">POST /api/clientes (multipart)</text>
+        <text x="760" y="554" text-anchor="middle" fill="#F6CFC9" font-size="9.5">solo ADMIN / RECEPCIONISTA</text>
+
+        <!-- ===================== FLECHAS VERTICALES ===================== -->
+        <g stroke="#2A5CDB" stroke-width="1.6" fill="none" marker-end="url(#flecha)">
+          <path d="M315,92 L315,160" />
+          <path d="M315,216 L315,300" />
+        </g>
+        <g stroke="#B4302A" stroke-width="1.6" fill="none" marker-end="url(#flecha)">
+          <path d="M770,92 L770,160" />
+          <path d="M770,216 L770,300" />
+        </g>
+        <!-- de las otras 3 vistas de fase 1 hacia authFacade -->
+        <g stroke="#2A5CDB" stroke-width="1.4" fill="none" marker-end="url(#flecha)">
+          <path d="M448,92 C448,120 360,130 320,160" />
+          <path d="M622,92 C622,120 400,135 330,160" />
+          <path d="M791,92 C791,125 420,140 345,160" />
+        </g>
+
+        <!-- repositories -> http.js -->
+        <g stroke="#123A6B" stroke-width="1.5" fill="none" marker-end="url(#flecha)">
+          <path d="M340,348 C400,365 460,375 500,392" />
+          <path d="M740,348 C680,365 620,375 580,392" />
+        </g>
+        <!-- http.js -> API -->
+        <g stroke="#123A6B" stroke-width="1.6" fill="none" marker-end="url(#flecha)">
+          <path d="M480,436 L300,502" />
+          <path d="M540,436 L480,502" />
+          <path d="M620,436 L740,502" />
+        </g>
+
+        <!-- Facade <-> Store -->
+        <g stroke="#8AA3C4" stroke-width="1.3" fill="none" stroke-dasharray="4 3" marker-end="url(#flecha-gris)">
+          <path d="M480,180 C700,140 940,150 962,175" />
+        </g>
+        <!-- Vistas leen Store directamente (no es Repository) -->
+        <g stroke="#8AA3C4" stroke-width="1.3" fill="none" stroke-dasharray="4 3" marker-end="url(#flecha-gris)">
+          <path d="M866,69 C930,90 1010,120 1010,148" />
+        </g>
+
+        <!-- ===================== LEYENDA DE FLECHAS ===================== -->
+        <g font-size="9.5" fill="#123A6B">
+          <line x1="60" y1="660" x2="95" y2="660" stroke="#2A5CDB" stroke-width="1.8" marker-end="url(#flecha)"/>
+          <text x="102" y="663">Llamada de metodo (await)</text>
+
+          <line x1="300" y1="660" x2="335" y2="660" stroke="#8AA3C4" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#flecha-gris)"/>
+          <text x="342" y="663">Lectura/escritura de estado reactivo (Store), sin peticion HTTP</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="leyenda">
+      <div class="leyenda-item"><span class="muestra" style="background:#DCEBFB;border:1px solid #2A5CDB"></span> Vista de fase 1 (cuentas)</div>
+      <div class="leyenda-item"><span class="muestra" style="background:#FDECEA;border:1px solid #D0463A"></span> Vista de fase 2 (clientes)</div>
+      <div class="leyenda-item"><span class="muestra" style="background:#2A5CDB"></span> Facade / Repository de cuentas</div>
+      <div class="leyenda-item"><span class="muestra" style="background:#B4302A"></span> Facade / Repository de clientes</div>
+      <div class="leyenda-item"><span class="muestra" style="background:#0B1E36"></span> Endpoint REST existente</div>
+      <div class="leyenda-item"><span class="muestra" style="background:#5A130F"></span> Endpoint REST nuevo (fase 2)</div>
+    </div>
+
+    <p class="nota">
+      La Vista nunca llama a un <code>Repository</code> ni a <code>http.js</code> directamente: siempre pasa por su <code>Facade</code>.
+      La única excepción visible aquí es la lectura del <code>Store</code> (Pinia): las vistas leen ahí el usuario/rol ya cargado
+      para mostrarlo en pantalla (por ejemplo el nombre en el panel, o si el rol alcanza para ver "Clientes" en el menú);
+      esa lectura no dispara ninguna petición de red, por eso no se considera una violación de la capa Repository —
+      quien sí llama al Repository y actualiza el Store es siempre el Facade.
+    </p>
+  </div>
+</body>
+</html>

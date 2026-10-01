@@ -1,6 +1,8 @@
-import http from './http'
+import http from '../services/http'
 
-export const authService = {
+// Repository: unico lugar que sabe la ruta y la forma exacta de cada
+// peticion REST de autenticacion. No conoce Pinia ni las vistas, solo API.
+export const authRepository = {
   registrar(datos) {
     return http.post('/auth/registro', datos)
   },

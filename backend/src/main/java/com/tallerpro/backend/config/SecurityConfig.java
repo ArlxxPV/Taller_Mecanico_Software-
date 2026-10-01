@@ -54,6 +54,7 @@ public class SecurityConfig {
                         // Mas especifico primero: cualquier usuario autenticado puede ver su propio perfil.
                         .requestMatchers("/api/usuarios/yo").authenticated()
                         .requestMatchers("/api/usuarios/**").hasAnyRole("ADMIN", "EMPLEADO")
+                        .requestMatchers("/api/clientes/**").hasAnyRole("ADMIN", "RECEPCIONISTA")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

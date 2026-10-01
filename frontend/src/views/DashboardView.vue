@@ -1,19 +1,30 @@
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '../stores/auth'
+import { authFacade } from '../facades/authFacade'
 
 const router = useRouter()
+const toast = useToast()
 const auth = useAuthStore()
 const cargando = ref(true)
 
-const navegacion = [
+const puedeRegistrarClientes = computed(() => {
+  const roles = auth.rolesUsuario
+  return roles.includes('ADMIN') || roles.includes('RECEPCIONISTA')
+})
+
+// "Clientes" es la unica seccion ya construida ademas del panel; su enlace
+// solo se activa si el rol del usuario lo permite (el backend igual lo exige
+// en /api/clientes/**, esto es solo para no mostrar un enlace que va a fallar).
+const navegacion = computed(() => [
   { icono: 'pi-home', etiqueta: 'Panel', activo: true },
-  { icono: 'pi-users', etiqueta: 'Clientes', activo: false },
-  { icono: 'pi-car', etiqueta: 'Vehiculos', activo: false },
-  { icono: 'pi-file-edit', etiqueta: 'Ordenes', activo: false },
-  { icono: 'pi-box', etiqueta: 'Inventario', activo: false }
-]
+  { icono: 'pi-users', etiqueta: 'Clientes', ruta: puedeRegistrarClientes.value ? 'clientes-lista' : null },
+  { icono: 'pi-car', etiqueta: 'Vehiculos' },
+  { icono: 'pi-file-edit', etiqueta: 'Ordenes' },
+  { icono: 'pi-box', etiqueta: 'Inventario' }
+])
 
 const nombre = computed(() => auth.usuario?.nombreCompleto ?? '')
 const rolPrincipal = computed(() => auth.usuario?.roles?.[0] ?? '')
@@ -25,15 +36,16 @@ const ultimoAcceso = computed(() => {
 })
 
 onMounted(async () => {
-  try {
-    await auth.cargarPerfil()
-  } finally {
-    cargando.value = false
+  const resultado = await authFacade.cargarPerfil()
+  if (!resultado.ok) {
+    toast.add({ severity: 'error', summary: 'No se pudo cargar tu perfil', detail: resultado.mensaje, life: 4000 })
   }
+  cargando.value = false
 })
 
 function salir() {
-  auth.cerrarSesion()
+  const resultado = authFacade.cerrarSesion()
+  toast.add({ severity: 'success', summary: 'Hasta pronto', detail: resultado.mensaje, life: 2500 })
   router.push({ name: 'login' })
 }
 </script>
@@ -41,23 +53,30 @@ function salir() {
 <template>
   <div class="flex min-h-screen bg-paper">
     <!-- Barra lateral -->
-    <aside class="hidden w-64 flex-col justify-between bg-ink px-5 py-7 text-white md:flex">
+    <aside class="hidden w-64 flex-col justify-between bg-gradient-to-b from-ink to-deep px-5 py-7 text-white md:flex">
       <div>
-        <span class="font-display text-lg font-semibold tracking-tight">TallerPro</span>
+        <div class="flex items-center gap-2.5">
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white">
+            <i class="pi pi-wrench text-sm"></i>
+          </span>
+          <span class="font-display text-lg font-bold tracking-tight">TallerPro</span>
+        </div>
 
         <nav class="mt-10 space-y-1">
-          <div
+          <component
+            :is="item.ruta ? 'RouterLink' : 'div'"
             v-for="item in navegacion"
             :key="item.etiqueta"
+            :to="item.ruta ? { name: item.ruta } : undefined"
             class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm"
-            :class="item.activo ? 'bg-primary text-white' : 'text-white/55'"
+            :class="item.activo ? 'bg-primary text-white' : item.ruta ? 'text-white/80 hover:bg-white/10 hover:text-white' : 'text-white/55'"
           >
             <i class="pi" :class="item.icono"></i>
             <span>{{ item.etiqueta }}</span>
-            <span v-if="!item.activo" class="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/50">
+            <span v-if="!item.activo && !item.ruta" class="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/50">
               proximamente
             </span>
-          </div>
+          </component>
         </nav>
       </div>
 
@@ -71,7 +90,7 @@ function salir() {
     <main class="flex-1 px-6 py-8 sm:px-10">
       <header class="mb-8 flex items-center justify-between">
         <div>
-          <h1 class="font-display text-2xl font-semibold text-ink">Hola, {{ nombre || '...' }}</h1>
+          <h1 class="font-display text-2xl font-bold text-ink">Hola, {{ nombre || '...' }}</h1>
           <p class="mt-1 text-sm text-ink/60">Este es el modulo de identidad, usuarios y roles.</p>
         </div>
         <span v-if="rolPrincipal" class="rounded-full bg-mist px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-primary">

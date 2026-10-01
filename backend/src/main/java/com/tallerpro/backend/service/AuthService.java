@@ -69,6 +69,8 @@ public class AuthService {
 
         Cliente cliente = new Cliente();
         cliente.setUsuario(usuario);
+        cliente.setNombreCompleto(usuario.getNombreCompleto());
+        cliente.setEmail(usuario.getEmail());
         clienteRepository.save(cliente);
 
         return UsuarioResponse.desde(usuario);

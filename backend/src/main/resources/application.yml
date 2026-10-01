@@ -37,6 +37,14 @@ spring:
     host: localhost
     port: 1025
 
+  servlet:
+    multipart:
+      # Un poco por encima de tallerpro.archivos.foto-max-bytes (12 MB) para que
+      # el validador propio (ClienteService) sea el que de el mensaje de error,
+      # no el filtro generico de Spring.
+      max-file-size: 15MB
+      max-request-size: 15MB
+
 # --- Configuracion propia de la app ---
 tallerpro:
   jwt:
@@ -48,6 +56,11 @@ tallerpro:
   reset-password:
     minutos-expiracion: 30
     url-frontend: "http://localhost:5173/restablecer-password"
+  archivos:
+    # Ruta relativa a donde se ejecuta el backend. En produccion conviene
+    # usar una ruta absoluta fuera del directorio de la app.
+    directorio-fotos-clientes: uploads/clientes
+    foto-max-bytes: 12582912   # 12 MB
 
 logging:
   level:

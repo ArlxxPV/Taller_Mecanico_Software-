@@ -1,40 +1,40 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
-import { authService } from '../services/authService'
+import { useToast } from 'primevue/usetoast'
+import { authFacade } from '../facades/authFacade'
 import AuthLayout from '../components/AuthLayout.vue'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 
 const token = ref(route.query.token || '')
 const nuevaPassword = ref('')
 const confirmarPassword = ref('')
 const cargando = ref(false)
 const listo = ref(false)
-const error = ref('')
 
 async function enviar() {
-  error.value = ''
-
   if (nuevaPassword.value !== confirmarPassword.value) {
-    error.value = 'Las dos contrasenas no coinciden.'
+    toast.add({ severity: 'warn', summary: 'Revisa la contrasena', detail: 'Las dos contrasenas no coinciden.', life: 4000 })
     return
   }
   if (!token.value) {
-    error.value = 'Falta el token del enlace. Copia el enlace completo que recibiste por correo.'
+    toast.add({ severity: 'warn', summary: 'Falta el token', detail: 'Copia el enlace completo que recibiste por correo.', life: 4000 })
     return
   }
 
   cargando.value = true
-  try {
-    await authService.restablecerPassword(token.value, nuevaPassword.value)
+  const resultado = await authFacade.restablecerPassword(token.value, nuevaPassword.value)
+  cargando.value = false
+
+  if (resultado.ok) {
     listo.value = true
+    toast.add({ severity: 'success', summary: 'Contrasena actualizada', detail: resultado.mensaje, life: 3000 })
     setTimeout(() => router.push({ name: 'login' }), 2500)
-  } catch (e) {
-    error.value = e.response?.data?.mensaje || 'El enlace no es valido o ya expiro.'
-  } finally {
-    cargando.value = false
+  } else {
+    toast.add({ severity: 'error', summary: 'No se pudo actualizar', detail: resultado.mensaje, life: 4000 })
   }
 }
 </script>
@@ -63,8 +63,6 @@ async function enviar() {
         <input id="confirmar" v-model="confirmarPassword" type="password" required autocomplete="new-password"
                class="campo-tallerpro" placeholder="Repite la contrasena" />
       </div>
-
-      <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
       <button type="submit" class="boton-primario" :disabled="cargando">
         {{ cargando ? 'Guardando...' : 'Guardar nueva contrasena' }}
