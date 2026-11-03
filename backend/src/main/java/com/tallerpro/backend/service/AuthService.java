@@ -5,6 +5,8 @@ import com.tallerpro.backend.dto.*;
 import com.tallerpro.backend.exception.ApiException;
 import com.tallerpro.backend.model.*;
 import com.tallerpro.backend.repository.ClienteRepository;
+import com.tallerpro.backend.repository.EstatusRepository;
+import com.tallerpro.backend.repository.HistorialEstatusClienteRepository;
 import com.tallerpro.backend.repository.LoginAuditRepository;
 import com.tallerpro.backend.repository.RolRepository;
 import com.tallerpro.backend.repository.UsuarioRepository;
@@ -29,6 +31,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final AppUserDetailsService userDetailsService;
     private final SeguridadProperties seguridadProperties;
+    private final EstatusRepository estatusRepository;
+    private final HistorialEstatusClienteRepository historialEstatusClienteRepository;
 
     public AuthService(
             UsuarioRepository usuarioRepository,
@@ -38,7 +42,9 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AppUserDetailsService userDetailsService,
-            SeguridadProperties seguridadProperties
+            SeguridadProperties seguridadProperties,
+            EstatusRepository estatusRepository,
+            HistorialEstatusClienteRepository historialEstatusClienteRepository
     ) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
@@ -48,6 +54,8 @@ public class AuthService {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.seguridadProperties = seguridadProperties;
+        this.estatusRepository = estatusRepository;
+        this.historialEstatusClienteRepository = historialEstatusClienteRepository;
     }
 
     @Transactional
@@ -56,7 +64,7 @@ public class AuthService {
             throw new ApiException(HttpStatus.CONFLICT, "Ese correo ya esta registrado. Inicia sesion o usa otro correo.");
         }
 
-        Rol rolCliente = rolRepository.findByNombre(NombreRol.CLIENTE)
+        Rol rolCliente = rolRepository.findByNombre("CLIENTE")
                 .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "El rol CLIENTE no existe. Verifica las migraciones de Flyway."));
 
         Usuario usuario = new Usuario();
@@ -67,11 +75,24 @@ public class AuthService {
         usuario.setRoles(Set.of(rolCliente));
         usuario = usuarioRepository.save(usuario);
 
+        Estatus estatusActivo = estatusRepository.getReferenceById(EstatusId.ACTIVO);
+
         Cliente cliente = new Cliente();
         cliente.setUsuario(usuario);
         cliente.setNombreCompleto(usuario.getNombreCompleto());
         cliente.setEmail(usuario.getEmail());
-        clienteRepository.save(cliente);
+        cliente.setOrigenRegistro("AUTORREGISTRO");
+        cliente.setEstatus(estatusActivo);
+        cliente = clienteRepository.save(cliente);
+
+        // Usuario nulo a proposito (igual que el backfill de V12): no hay un
+        // "actor" distinto del propio cliente que se esta dando de alta. El
+        // frontend usa origenRegistro ("AUTORREGISTRO") como respaldo.
+        HistorialEstatusCliente alta = new HistorialEstatusCliente();
+        alta.setCliente(cliente);
+        alta.setEstatusNuevo(estatusActivo);
+        alta.setMotivo("Alta");
+        historialEstatusClienteRepository.save(alta);
 
         return UsuarioResponse.desde(usuario);
     }

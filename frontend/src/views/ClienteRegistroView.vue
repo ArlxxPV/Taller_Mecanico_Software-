@@ -1,18 +1,27 @@
 <script setup>
-import { reactive, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { reactive, ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Dialog from 'primevue/dialog'
 import { clienteFacade } from '../facades/clienteFacade'
 import ClienteFormularioCampos from '../components/ClienteFormularioCampos.vue'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
 const toast = useToast()
+const auth = useAuthStore()
+
+// Una RECEPCIONISTA solo puede registrar clientes en su propio taller: el
+// select queda bloqueado y precargado (el backend igual lo valida, esto es
+// solo para no dejarla elegir algo que el servidor va a rechazar).
+const bloquearTaller = computed(() => auth.rolesUsuario.includes('RECEPCIONISTA'))
 
 const formulario = reactive({
-  nombreCompleto: '',
+  nombres: '',
+  apellidoPaterno: '',
+  apellidoMaterno: '',
+  curp: '',
   contactoAlternativo: '',
-  edad: '',
   fechaNacimiento: '',
   telefonoPersonal: '',
   telefonoTrabajo: '',
@@ -22,7 +31,8 @@ const formulario = reactive({
   colonia: '',
   municipio: '',
   estado: '',
-  codigoPostal: ''
+  codigoPostal: '',
+  tallerId: bloquearTaller.value ? (auth.usuario?.tallerId ?? '') : ''
 })
 
 const campos = ref(null)
@@ -32,14 +42,29 @@ const mensajeError = ref('')
 const erroresCampos = ref([])
 const mostrarConfirmacion = ref(false)
 
+// Revisa CURP duplicada al salir del campo (ver maqueta "Registrar cliente").
+const curpDuplicada = ref(null) // { existe, clienteId, nombreCompleto } | null
+async function alSalirCurp() {
+  curpDuplicada.value = null
+  if (!formulario.curp || formulario.curp.length < 18) return
+  const resultado = await clienteFacade.verificarCurp(formulario.curp)
+  if (resultado.existe) curpDuplicada.value = resultado
+}
+watch(() => formulario.curp, () => { curpDuplicada.value = null })
+
 function limpiarFormulario() {
   Object.keys(formulario).forEach((campo) => { formulario[campo] = '' })
+  if (bloquearTaller.value) {
+    formulario.tallerId = auth.usuario?.tallerId ?? ''
+  }
   campos.value?.quitarFoto()
   mensajeError.value = ''
   erroresCampos.value = []
+  curpDuplicada.value = null
 }
 
 async function enviar() {
+  if (curpDuplicada.value?.existe) return
   mensajeError.value = ''
   erroresCampos.value = []
   cargando.value = true
@@ -66,39 +91,42 @@ function irALista() {
   mostrarConfirmacion.value = false
   router.push({ name: 'clientes-lista' })
 }
+
+function verClienteExistente() {
+  mostrarConfirmacion.value = false
+  router.push({ name: 'clientes-detalle', params: { id: curpDuplicada.value.clienteId } })
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-paper px-6 py-10 sm:px-10">
-    <div class="mx-auto max-w-3xl">
-      <RouterLink :to="{ name: 'clientes-lista' }" class="text-sm font-medium text-primary hover:text-primary-hover">
-        ← Volver a clientes
-      </RouterLink>
+  <div class="mx-auto max-w-3xl">
+    <h1 class="titulo-pagina">Registrar cliente</h1>
+    <p class="subtitulo-pagina">Captura los datos del cliente para darlo de alta en el taller. Solo administradores y recepción.</p>
 
-      <h1 class="mt-3 font-display text-2xl font-bold text-ink">Registrar cliente</h1>
-      <p class="mt-1 text-sm text-ink/60">
-        Captura los datos del cliente para darlo de alta en el taller. Solo visible para administradores y recepcion.
-      </p>
+    <form class="mt-8 space-y-6" @submit.prevent="enviar">
+      <div v-if="mensajeError" class="caja-error-tp">
+        <p class="font-semibold">{{ mensajeError }}</p>
+        <ul v-if="erroresCampos.length" class="mt-1 list-disc pl-4">
+          <li v-for="(detalle, i) in erroresCampos" :key="i">{{ detalle }}</li>
+        </ul>
+      </div>
 
-      <form class="mt-8 space-y-8" @submit.prevent="enviar">
-        <div v-if="mensajeError" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          <p class="font-medium">{{ mensajeError }}</p>
-          <ul v-if="erroresCampos.length" class="mt-1 list-disc pl-4">
-            <li v-for="(detalle, i) in erroresCampos" :key="i">{{ detalle }}</li>
-          </ul>
-        </div>
+      <div v-if="curpDuplicada?.existe" class="caja-error-tp flex items-center justify-between gap-3">
+        <span>Ya existe un cliente con esta CURP: <strong>{{ curpDuplicada.nombreCompleto }}</strong>. No se puede registrar de nuevo.</span>
+        <button type="button" class="shrink-0 font-semibold underline" @click="verClienteExistente">Ver cliente</button>
+      </div>
 
-        <ClienteFormularioCampos ref="campos" :formulario="formulario" v-model:foto-archivo="fotoArchivo" />
+      <ClienteFormularioCampos ref="campos" :formulario="formulario" :bloquear-taller="bloquearTaller" v-model:foto-archivo="fotoArchivo"
+                                @curp-blur="alSalirCurp" />
 
-        <button type="submit" class="boton-primario sm:w-auto sm:px-8" :disabled="cargando">
-          {{ cargando ? 'Guardando...' : 'Registrar cliente' }}
-        </button>
-      </form>
-    </div>
+      <button type="submit" class="boton-tp-primario w-auto px-8" :disabled="cargando || curpDuplicada?.existe">
+        {{ cargando ? 'Guardando...' : 'Registrar cliente' }}
+      </button>
+    </form>
 
     <Dialog v-model:visible="mostrarConfirmacion" modal header="Cliente registrado" :closable="false" class="w-full max-w-sm">
       <p class="text-sm text-ink/70">
-        <strong>{{ formulario.nombreCompleto }}</strong> se registró correctamente en TallerPro.
+        <strong>{{ formulario.nombres }} {{ formulario.apellidoPaterno }} {{ formulario.apellidoMaterno }}</strong> se registró correctamente en TallerPro.
       </p>
       <template #footer>
         <button class="rounded-lg border border-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-mist/60" @click="registrarOtro">

@@ -13,8 +13,9 @@ export const clienteRepository = {
     }
     return http.post('/clientes', formData)
   },
-  listar() {
-    return http.get('/clientes')
+  // params: { tallerId, estatusId, q, ordenarPor, direccion, pagina, porPagina, incluirEliminados }, todos opcionales.
+  listar(params) {
+    return http.get('/clientes', { params })
   },
   obtener(id) {
     return http.get(`/clientes/${id}`)
@@ -27,7 +28,38 @@ export const clienteRepository = {
     }
     return http.put(`/clientes/${id}`, formData)
   },
+  cambiarEstatus(id, estadoCliente) {
+    return http.patch(`/clientes/${id}/estatus`, { estadoCliente })
+  },
+  // params: { tallerId }, opcional.
+  resumen(params) {
+    return http.get('/clientes/resumen', { params })
+  },
   obtenerFotoBlob(id) {
     return http.get(`/clientes/${id}/foto`, { responseType: 'blob' })
+  },
+  listarSinAcceso() {
+    return http.get('/clientes/sin-acceso')
+  },
+  asignarAcceso(id, password) {
+    return http.post(`/clientes/${id}/acceso`, { password })
+  },
+  historial(id) {
+    return http.get(`/clientes/${id}/historial`)
+  },
+  suspender(id, motivo) {
+    return http.patch(`/clientes/${id}/suspender`, { motivo })
+  },
+  reactivar(id, comentario) {
+    return http.patch(`/clientes/${id}/reactivar`, { comentario: comentario || null })
+  },
+  eliminar(id, motivo) {
+    return http.delete(`/clientes/${id}`, { data: { motivo } })
+  },
+  restaurar(id) {
+    return http.patch(`/clientes/${id}/restaurar`)
+  },
+  verificarCurp(curp) {
+    return http.get('/clientes/verificar-curp', { params: { curp } })
   }
 }

@@ -33,4 +33,153 @@
   .etiqueta-campo {
     @apply mb-1.5 block text-sm font-semibold text-ink;
   }
+
+  /* Insignia reutilizable (estatus de cliente, rol, etc.). El color lo da
+     quien la usa con :class, ej. "bg-emerald-100 text-emerald-700" (activo)
+     o "bg-red-100 text-red-700" (suspendido). */
+  .insignia-estado {
+    @apply rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide;
+  }
+
+  /* ===== Fase 2: sistema de componentes de las pantallas dentro del layout
+     (catalogos, clientes, vehiculos). Los de arriba (campo-tallerpro,
+     boton-primario, etiqueta-campo, insignia-estado) se conservan: las
+     pantallas de autenticacion y las que todavia no se tocan siguen
+     usandolos tal cual. Estos son nuevos, para no romper nada existente. */
+
+  .titulo-pagina {
+    @apply font-display text-[28px] font-bold leading-tight tracking-[-0.01em] text-ink;
+  }
+
+  .subtitulo-pagina {
+    @apply mt-1 text-sm text-secondary;
+  }
+
+  .tarjeta-tp {
+    @apply rounded-[14px] border border-mist bg-white p-5;
+  }
+
+  .boton-tp {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[10px] px-4 text-sm font-semibold transition
+           disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .boton-tp-primario {
+    @apply boton-tp bg-primary text-white hover:bg-primary-hover disabled:bg-primary/40 disabled:hover:bg-primary/40;
+  }
+
+  .boton-tp-secundario {
+    @apply boton-tp border border-borderInput bg-white text-ink hover:bg-paper;
+  }
+
+  .boton-tp-peligro {
+    @apply boton-tp bg-danger text-white hover:bg-danger/90;
+  }
+
+  .boton-tp-exito {
+    @apply boton-tp bg-success text-white hover:bg-success/90;
+  }
+
+  .boton-tp-texto {
+    @apply text-[13px] font-semibold hover:underline disabled:cursor-not-allowed disabled:text-[#94A3B8] disabled:no-underline disabled:opacity-100;
+  }
+
+  .campo-tp {
+    @apply min-h-[44px] w-full rounded-[10px] border border-borderInput bg-[#F8FAFC] px-3.5 text-sm text-ink
+           placeholder:text-secondary/70 transition
+           focus:border-[1.5px] focus:border-primary focus:bg-white focus:outline-none
+           disabled:cursor-not-allowed disabled:border-mist disabled:bg-[#EEF2F7] disabled:text-[#64748B];
+  }
+
+  .campo-tp-error {
+    @apply border-[1.5px] border-danger bg-[#FFF7F7];
+  }
+
+  .campo-tp-correcto {
+    @apply border-[1.5px] border-success;
+  }
+
+  .etiqueta-tp {
+    @apply mb-1.5 block text-[13px] font-semibold text-ink;
+  }
+
+  .ayuda-tp {
+    @apply mt-1 text-xs text-secondary;
+  }
+
+  .error-tp {
+    @apply mt-1 text-xs font-semibold text-danger;
+  }
+
+  .correcto-tp {
+    @apply mt-1 text-xs font-semibold text-success;
+  }
+
+  .tabla-tp thead {
+    @apply bg-[#F5F8FD] text-xs font-bold uppercase tracking-[0.05em] text-secondary;
+  }
+
+  .tabla-tp thead th {
+    @apply border-b border-mist px-4 py-3 text-left;
+  }
+
+  .tabla-tp tbody tr {
+    @apply border-b border-divider text-sm last:border-b-0;
+  }
+
+  .tabla-tp tbody td {
+    @apply px-4 py-3;
+  }
+
+  .avatar-tp {
+    @apply flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[#E8EFFD] text-[13px] font-bold text-[#1E40AF];
+  }
+
+  /* Chips de estatus: mismos 4 nombres de siempre (ACTIVO/SUSPENDIDO) mas los
+     dos nuevos del catalogo (ACTUALIZADO/ELIMINADO) y cualquier estatus
+     personalizado que un admin agregue (cae en el "else" gris). */
+  .chip-estatus {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide;
+  }
+
+  .chip-estatus-activo {
+    @apply chip-estatus bg-[#DCFCE7] text-[#166534];
+  }
+
+  .chip-estatus-suspendido {
+    @apply chip-estatus bg-[#FEE2E2] text-danger;
+  }
+
+  .chip-estatus-actualizado {
+    @apply chip-estatus bg-[#DBEAFE] text-[#1E40AF];
+  }
+
+  .chip-estatus-neutro {
+    @apply chip-estatus bg-[#E2E8F0] text-[#334155];
+  }
+
+  .pill-tp {
+    @apply inline-flex items-center rounded-full bg-[#EEF2F7] px-2.5 py-1 text-[11px] font-semibold text-[#334155];
+  }
+
+  .pill-tp-personalizado {
+    @apply pill-tp bg-[#FFF7ED] text-[#9A3412];
+  }
+
+  .caja-info-tp {
+    @apply rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-sm text-[#1E3A8A];
+  }
+
+  .caja-error-tp {
+    @apply rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm text-[#7F1D1D];
+  }
+
+  /* Modal persistente: el fondo NO cierra al hacer click (ver ModalBase.vue). */
+  .modal-fondo-tp {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-[rgba(15,23,42,0.6)] p-4;
+  }
+
+  .modal-caja-tp {
+    @apply flex max-h-[90vh] w-full flex-col rounded-2xl bg-white shadow-[0_20px_40px_rgba(15,23,42,0.25)];
+  }
 }

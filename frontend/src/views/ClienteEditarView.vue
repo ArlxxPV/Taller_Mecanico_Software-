@@ -1,18 +1,23 @@
 <script setup>
-import { reactive, ref, watch } from 'vue'
+import { reactive, ref, watch, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { clienteFacade } from '../facades/clienteFacade'
 import ClienteFormularioCampos from '../components/ClienteFormularioCampos.vue'
+import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const auth = useAuthStore()
+
+const bloquearTaller = computed(() => auth.rolesUsuario.includes('RECEPCIONISTA'))
+const nombreCompleto = computed(() => [formulario.nombres, formulario.apellidoPaterno, formulario.apellidoMaterno].filter(Boolean).join(' '))
 
 const formulario = reactive({
-  nombreCompleto: '', contactoAlternativo: '', edad: '', fechaNacimiento: '',
+  nombres: '', apellidoPaterno: '', apellidoMaterno: '', curp: '', contactoAlternativo: '', fechaNacimiento: '',
   telefonoPersonal: '', telefonoTrabajo: '', email: '', emailTrabajo: '',
-  calle: '', colonia: '', municipio: '', estado: '', codigoPostal: ''
+  calle: '', colonia: '', municipio: '', estado: '', codigoPostal: '', tallerId: ''
 })
 
 const fotoArchivo = ref(null)
@@ -72,43 +77,42 @@ async function enviar() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-paper px-6 py-10 sm:px-10">
-    <div class="mx-auto max-w-3xl">
-      <RouterLink :to="{ name: 'clientes-lista' }" class="text-sm font-medium text-primary hover:text-primary-hover">
-        ← Volver a clientes
-      </RouterLink>
+  <div class="mx-auto max-w-6xl">
+    <div v-if="cargandoDatos" class="mt-10 text-center text-sm text-secondary">Cargando...</div>
 
-      <div v-if="cargandoDatos" class="mt-10 text-center text-sm text-ink/50">Cargando...</div>
-
-      <div v-else-if="noEncontrado" class="mt-10 text-center text-sm text-ink/60">
-        No se encontró este cliente.
-      </div>
-
-      <template v-else>
-        <h1 class="mt-3 font-display text-2xl font-bold text-ink">Editar cliente</h1>
-        <p class="mt-1 text-sm text-ink/60">{{ formulario.nombreCompleto }}</p>
-
-        <form class="mt-8 space-y-8" @submit.prevent="enviar">
-          <div v-if="mensajeError" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            <p class="font-medium">{{ mensajeError }}</p>
-            <ul v-if="erroresCampos.length" class="mt-1 list-disc pl-4">
-              <li v-for="(detalle, i) in erroresCampos" :key="i">{{ detalle }}</li>
-            </ul>
-          </div>
-
-          <ClienteFormularioCampos :formulario="formulario" :foto-actual-url="fotoActualUrl" v-model:foto-archivo="fotoArchivo" />
-
-          <div class="flex gap-3">
-            <button type="submit" class="boton-primario sm:w-auto sm:px-8" :disabled="guardando">
-              {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
-            </button>
-            <RouterLink :to="{ name: 'clientes-detalle', params: { id: route.params.id } }"
-                        class="rounded-lg border border-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-mist/60">
-              Cancelar
-            </RouterLink>
-          </div>
-        </form>
-      </template>
+    <div v-else-if="noEncontrado" class="mt-10 text-center text-sm text-secondary">
+      No se encontró este cliente.
     </div>
+
+    <template v-else>
+      <h1 class="titulo-pagina">Editar cliente</h1>
+      <p class="subtitulo-pagina">{{ nombreCompleto }}</p>
+
+      <form class="mt-8" @submit.prevent="enviar">
+        <div v-if="mensajeError" class="caja-error-tp mb-6">
+          <p class="font-semibold">{{ mensajeError }}</p>
+          <ul v-if="erroresCampos.length" class="mt-1 list-disc pl-4">
+            <li v-for="(detalle, i) in erroresCampos" :key="i">{{ detalle }}</li>
+          </ul>
+        </div>
+
+        <!-- Las secciones del formulario fluyen en 2 columnas tipo mosaico
+             (cada tarjeta cae en la columna mas corta) para aprovechar el
+             ancho de la pantalla en vez de apilarse una tras otra. -->
+        <div class="columns-1 gap-6 lg:columns-2 [&>section]:mb-6 [&>section]:break-inside-avoid-column">
+          <ClienteFormularioCampos :formulario="formulario" :foto-actual-url="fotoActualUrl"
+                                    :bloquear-taller="bloquearTaller" v-model:foto-archivo="fotoArchivo" />
+        </div>
+
+        <div class="flex gap-3">
+          <button type="submit" class="boton-tp-primario" :disabled="guardando">
+            {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+          <RouterLink :to="{ name: 'clientes-detalle', params: { id: route.params.id } }" class="boton-tp-secundario">
+            Cancelar
+          </RouterLink>
+        </div>
+      </form>
+    </template>
   </div>
 </template>

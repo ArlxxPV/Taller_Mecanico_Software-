@@ -29,6 +29,17 @@ public class Usuario {
     @Column(length = 20)
     private String telefono;
 
+    // Solo tiene sentido para RECEPCIONISTA (su taller de trabajo); se asigna
+    // a mano por SQL (ver registro_Fase02.md), no hay pantalla de personal.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "taller_id")
+    private Taller taller;
+
+    // Lectura barata del FK sin disparar el fetch LAZY de Taller completo;
+    // se usa en las validaciones de aislamiento por taller (ClienteService).
+    @Column(name = "taller_id", insertable = false, updatable = false)
+    private Long tallerId;
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 

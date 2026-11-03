@@ -35,8 +35,13 @@ public class JwtService {
         Instant ahora = Instant.now();
         Instant expiracion = ahora.plusSeconds(expiracionMinutos * 60);
 
+        // Solo ROLE_*: los PERM_* (ver AppUserDetailsService) nunca se leen de
+        // vuelta de este claim (JwtAuthenticationFilter siempre recalcula
+        // autoridades frescas desde BD), asi que no tiene caso exponerlos en
+        // un JWT sin cifrar que cualquiera con el token puede decodificar.
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
+                .filter(autoridad -> autoridad.startsWith("ROLE_"))
                 .collect(Collectors.toList());
 
         return Jwts.builder()

@@ -11,7 +11,10 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     estaAutenticado: (state) => !!state.token,
-    rolesUsuario: (state) => state.usuario?.roles ?? []
+    rolesUsuario: (state) => state.usuario?.roles ?? [],
+    permisosUsuario: (state) => state.usuario?.permisos ?? [],
+    // Solo tiene valor si el usuario es CLIENTE (ver UsuarioResponse en el backend).
+    estadoClienteUsuario: (state) => state.usuario?.estadoCliente ?? null
   },
 
   actions: {

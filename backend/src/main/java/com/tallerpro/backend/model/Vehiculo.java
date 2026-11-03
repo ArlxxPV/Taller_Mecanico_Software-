@@ -28,6 +28,9 @@ public class Vehiculo {
     @Column(nullable = false, length = 60)
     private String modelo;
 
+    @Column(nullable = false, length = 80)
+    private String version;
+
     @Column(nullable = false)
     private short anio;
 
@@ -37,11 +40,36 @@ public class Vehiculo {
     @Column(length = 30)
     private String color;
 
-    @Column(unique = true, length = 32)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "estatus_id", nullable = false)
+    private Estatus estatus;
+
+    // IDs del catalogo NHTSA vPIC (Make_ID/Model_ID), nulos si se capturaron a
+    // mano via "No aparece en la lista" (ver CatalogoVehiculosService).
+    @Column(name = "marca_api_id")
+    private Integer marcaApiId;
+
+    @Column(name = "modelo_api_id")
+    private Integer modeloApiId;
+
+    @Column(nullable = false, unique = true, length = 17)
     private String vin;
+
+    @Column(name = "numero_serie", nullable = false, length = 17)
+    private String numeroSerie;
 
     private Integer kilometraje;
 
     @Column(name = "creado_en", nullable = false, updatable = false)
     private LocalDateTime creadoEn = LocalDateTime.now();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "creado_por_id")
+    private Usuario creadoPor;
+
+    @Column(name = "actualizado_en")
+    private LocalDateTime actualizadoEn;
+
+    @Column(name = "eliminado_en")
+    private LocalDateTime eliminadoEn;
 }

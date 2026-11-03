@@ -1,5 +1,7 @@
 package com.tallerpro.backend.security;
 
+import com.tallerpro.backend.model.ClavePermiso;
+import com.tallerpro.backend.model.Rol;
 import com.tallerpro.backend.model.Usuario;
 import com.tallerpro.backend.repository.UsuarioRepository;
 import org.springframework.security.core.GrantedAuthority;
@@ -10,6 +12,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -26,10 +30,23 @@ public class AppUserDetailsService implements UserDetailsService {
         Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UsernameNotFoundException("No existe un usuario con ese correo"));
 
-        List<GrantedAuthority> authorities = usuario.getRoles().stream()
-                .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.getNombre().name()))
-                .map(GrantedAuthority.class::cast)
-                .toList();
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        usuario.getRoles().forEach(rol -> authorities.add(new SimpleGrantedAuthority("ROLE_" + rol.getNombre())));
+
+        // Un rol "de sistema" (solo ADMIN) siempre tiene acceso total, sin
+        // importar lo que haya guardado en rol_permisos (ver PermisoService).
+        boolean esSistema = usuario.getRoles().stream().anyMatch(Rol::isEsSistema);
+        if (esSistema) {
+            Arrays.stream(ClavePermiso.values())
+                    .forEach(clave -> authorities.add(new SimpleGrantedAuthority("PERM_" + clave.name())));
+        } else {
+            usuario.getRoles().stream()
+                    .filter(Rol::isActivo)
+                    .flatMap(rol -> rol.getPermisos().stream())
+                    .map(permiso -> "PERM_" + permiso.getClave())
+                    .distinct()
+                    .forEach(permiso -> authorities.add(new SimpleGrantedAuthority(permiso)));
+        }
 
         return User.builder()
                 .username(usuario.getEmail())

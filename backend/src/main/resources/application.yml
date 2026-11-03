@@ -39,11 +39,11 @@ spring:
 
   servlet:
     multipart:
-      # Un poco por encima de tallerpro.archivos.foto-max-bytes (12 MB) para que
-      # el validador propio (ClienteService) sea el que de el mensaje de error,
-      # no el filtro generico de Spring.
-      max-file-size: 15MB
-      max-request-size: 15MB
+      # Un poco por encima de tallerpro.talleres.foto-max-bytes (15 MB, el mas
+      # grande de los dos limites) para que el validador propio (ClienteService/
+      # TallerService) sea el que de el mensaje de error, no el filtro generico de Spring.
+      max-file-size: 16MB
+      max-request-size: 16MB
 
 # --- Configuracion propia de la app ---
 tallerpro:
@@ -61,6 +61,9 @@ tallerpro:
     # usar una ruta absoluta fuera del directorio de la app.
     directorio-fotos-clientes: uploads/clientes
     foto-max-bytes: 12582912   # 12 MB
+  talleres:
+    directorio-fotos-talleres: uploads/talleres
+    foto-max-bytes: 15728640   # 15 MB
 
 logging:
   level:

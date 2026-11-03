@@ -1,6 +1,5 @@
 package com.tallerpro.backend.config;
 
-import com.tallerpro.backend.model.NombreRol;
 import com.tallerpro.backend.model.Usuario;
 import com.tallerpro.backend.repository.RolRepository;
 import com.tallerpro.backend.repository.UsuarioRepository;
@@ -42,7 +41,7 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
 
-        var rolAdmin = rolRepository.findByNombre(NombreRol.ADMIN)
+        var rolAdmin = rolRepository.findByNombre("ADMIN")
                 .orElseThrow(() -> new IllegalStateException("El rol ADMIN no existe: revisa que Flyway haya corrido V2."));
 
         Usuario admin = new Usuario();
