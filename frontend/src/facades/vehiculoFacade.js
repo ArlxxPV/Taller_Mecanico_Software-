@@ -66,6 +66,33 @@ export const vehiculoFacade = {
     }
   },
 
+  async desactivar(id) {
+    try {
+      const { data: vehiculo } = await vehiculoRepository.desactivar(id)
+      return { ok: true, mensaje: 'El vehiculo se desactivo correctamente.', vehiculo }
+    } catch (e) {
+      return extraerError(e, 'No se pudo desactivar el vehiculo.')
+    }
+  },
+
+  async activar(id) {
+    try {
+      const { data: vehiculo } = await vehiculoRepository.activar(id)
+      return { ok: true, mensaje: 'El vehiculo se activo correctamente.', vehiculo }
+    } catch (e) {
+      return extraerError(e, 'No se pudo activar el vehiculo.')
+    }
+  },
+
+  async historial(id) {
+    try {
+      const { data: historial } = await vehiculoRepository.historial(id)
+      return { ok: true, historial }
+    } catch (e) {
+      return extraerError(e, 'No se pudo cargar el historial del vehiculo.')
+    }
+  },
+
   async listar(filtros = {}) {
     try {
       const { data } = await vehiculoRepository.listar(filtros)

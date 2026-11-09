@@ -7,6 +7,7 @@ import { estatusFacade } from '../facades/estatusFacade'
 import { formatearPlaca } from '../utils/vehiculos'
 import ModalEditarVehiculo from '../components/ModalEditarVehiculo.vue'
 import ModalCambiarClienteVehiculo from '../components/ModalCambiarClienteVehiculo.vue'
+import ModalBase from '../components/ModalBase.vue'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
@@ -36,6 +37,33 @@ function abrirCambiarCliente(vehiculo) {
 function alCambiarCliente() {
   modalCambiarClienteAbierto.value = false
   cargar()
+}
+
+// Activar/desactivar: el usuario confirma antes de aplicar el cambio (ver orquestador).
+const modalEstatusAbierto = ref(false)
+const vehiculoCambiandoEstatus = ref(null)
+const guardandoEstatus = ref(false)
+const accionEstatus = computed(() => vehiculoCambiandoEstatus.value?.estatus === 'ACTIVO' ? 'desactivar' : 'activar')
+
+function abrirCambiarEstatus(vehiculo) {
+  vehiculoCambiandoEstatus.value = vehiculo
+  modalEstatusAbierto.value = true
+}
+
+async function confirmarCambiarEstatus() {
+  guardandoEstatus.value = true
+  const resultado = accionEstatus.value === 'desactivar'
+    ? await vehiculoFacade.desactivar(vehiculoCambiandoEstatus.value.id)
+    : await vehiculoFacade.activar(vehiculoCambiandoEstatus.value.id)
+  guardandoEstatus.value = false
+
+  if (resultado.ok) {
+    toast.add({ severity: 'success', summary: accionEstatus.value === 'desactivar' ? 'Vehículo desactivado' : 'Vehículo activado', detail: resultado.mensaje, life: 3000 })
+    modalEstatusAbierto.value = false
+    cargar()
+  } else {
+    toast.add({ severity: 'error', summary: 'No se pudo aplicar el cambio', detail: resultado.mensaje, life: 4500 })
+  }
 }
 
 const route = useRoute()
@@ -155,6 +183,9 @@ onMounted(async () => {
                 <div class="flex items-center gap-3">
                   <button type="button" class="boton-tp-texto text-primary" @click="abrirEditar(v)">Editar</button>
                   <button type="button" class="boton-tp-texto text-primary" @click="abrirCambiarCliente(v)">Cambiar cliente</button>
+                  <button type="button" class="boton-tp-texto" :class="v.estatus === 'ACTIVO' ? 'text-danger' : 'text-success'" @click="abrirCambiarEstatus(v)">
+                    {{ v.estatus === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
+                  </button>
                 </div>
               </td>
             </tr>
@@ -175,4 +206,21 @@ onMounted(async () => {
 
   <ModalEditarVehiculo v-if="modalEditarAbierto" :vehiculo="vehiculoEditando" @cerrar="modalEditarAbierto = false" @guardado="alGuardarEdicion" />
   <ModalCambiarClienteVehiculo v-if="modalCambiarClienteAbierto" :vehiculo="vehiculoReasignando" @cerrar="modalCambiarClienteAbierto = false" @guardado="alCambiarCliente" />
+
+  <ModalBase v-if="modalEstatusAbierto" :titulo="accionEstatus === 'desactivar' ? 'Desactivar vehículo' : 'Activar vehículo'"
+             ancho="confirmacion" @cerrar="modalEstatusAbierto = false">
+    <p class="text-sm text-ink/80">
+      ¿Seguro que quieres <strong>{{ accionEstatus === 'desactivar' ? 'desactivar' : 'activar' }}</strong> el vehículo
+      <strong>{{ formatearPlaca(vehiculoCambiandoEstatus?.placa) }}</strong>
+      ({{ vehiculoCambiandoEstatus?.marca }} {{ vehiculoCambiandoEstatus?.modelo }})?
+      Su historial se conserva.
+    </p>
+    <template #footer>
+      <button type="button" class="boton-tp-secundario" @click="modalEstatusAbierto = false">Cancelar</button>
+      <button type="button" :class="accionEstatus === 'desactivar' ? 'boton-tp-peligro' : 'boton-tp-exito'"
+              :disabled="guardandoEstatus" @click="confirmarCambiarEstatus">
+        {{ guardandoEstatus ? 'Guardando...' : (accionEstatus === 'desactivar' ? 'Desactivar' : 'Activar') }}
+      </button>
+    </template>
+  </ModalBase>
 </template>

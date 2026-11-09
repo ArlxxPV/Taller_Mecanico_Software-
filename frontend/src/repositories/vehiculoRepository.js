@@ -28,5 +28,14 @@ export const vehiculoRepository = {
   },
   cambiarCliente(id, datos) {
     return http.patch(`/vehiculos/${id}/cliente`, datos)
+  },
+  desactivar(id) {
+    return http.patch(`/vehiculos/${id}/desactivar`)
+  },
+  activar(id) {
+    return http.patch(`/vehiculos/${id}/activar`)
+  },
+  historial(id) {
+    return http.get(`/vehiculos/${id}/historial`)
   }
 }

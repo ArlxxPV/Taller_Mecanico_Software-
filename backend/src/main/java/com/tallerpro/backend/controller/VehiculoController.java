@@ -3,6 +3,7 @@ package com.tallerpro.backend.controller;
 import com.tallerpro.backend.dto.CambiarClienteVehiculoRequest;
 import com.tallerpro.backend.dto.ClienteResponse;
 import com.tallerpro.backend.dto.DisponibilidadResponse;
+import com.tallerpro.backend.dto.HistorialEstatusVehiculoResponse;
 import com.tallerpro.backend.dto.PaginaVehiculosResponse;
 import com.tallerpro.backend.dto.VehiculoRequest;
 import com.tallerpro.backend.dto.VehiculoResponse;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * Consulta y edicion (el registro se hace desde el cliente, en
@@ -82,5 +85,25 @@ public class VehiculoController {
     public VehiculoResponse cambiarCliente(@PathVariable Long id, @Valid @RequestBody CambiarClienteVehiculoRequest datos, Authentication authentication) {
         Usuario actor = usuarioRepository.findByEmailIgnoreCase(authentication.getName()).orElseThrow();
         return vehiculoService.cambiarPropietario(id, datos, actor);
+    }
+
+    /** El usuario ya confirmo en el frontend que de verdad quiere desactivarlo; aqui solo se aplica y se audita. */
+    @PatchMapping("/{id}/desactivar")
+    public VehiculoResponse desactivar(@PathVariable Long id, Authentication authentication) {
+        Usuario actor = usuarioRepository.findByEmailIgnoreCase(authentication.getName()).orElseThrow();
+        return vehiculoService.desactivar(id, actor);
+    }
+
+    @PatchMapping("/{id}/activar")
+    public VehiculoResponse activar(@PathVariable Long id, Authentication authentication) {
+        Usuario actor = usuarioRepository.findByEmailIgnoreCase(authentication.getName()).orElseThrow();
+        return vehiculoService.activar(id, actor);
+    }
+
+    /** Historial de auditoria del vehiculo: altas, ediciones, activaciones/desactivaciones. */
+    @GetMapping("/{id}/historial")
+    public List<HistorialEstatusVehiculoResponse> historial(@PathVariable Long id, Authentication authentication) {
+        Usuario actor = usuarioRepository.findByEmailIgnoreCase(authentication.getName()).orElseThrow();
+        return vehiculoService.historial(id, actor);
     }
 }

@@ -3,6 +3,7 @@ package com.tallerpro.backend.service;
 import com.tallerpro.backend.dto.CambiarClienteVehiculoRequest;
 import com.tallerpro.backend.dto.ClienteResponse;
 import com.tallerpro.backend.dto.DisponibilidadResponse;
+import com.tallerpro.backend.dto.HistorialEstatusVehiculoResponse;
 import com.tallerpro.backend.dto.PaginaVehiculosResponse;
 import com.tallerpro.backend.dto.VehiculoClienteHistorialResponse;
 import com.tallerpro.backend.dto.VehiculoRequest;
@@ -10,14 +11,18 @@ import com.tallerpro.backend.dto.VehiculoResponse;
 import com.tallerpro.backend.exception.ApiException;
 import com.tallerpro.backend.model.ClavePermiso;
 import com.tallerpro.backend.model.Cliente;
+import com.tallerpro.backend.model.Estatus;
 import com.tallerpro.backend.model.EstatusId;
+import com.tallerpro.backend.model.HistorialEstatusVehiculo;
 import com.tallerpro.backend.model.RelacionClienteVehiculo;
 import com.tallerpro.backend.model.Usuario;
 import com.tallerpro.backend.model.Vehiculo;
 import com.tallerpro.backend.repository.ClienteRepository;
 import com.tallerpro.backend.repository.EstatusRepository;
+import com.tallerpro.backend.repository.HistorialEstatusVehiculoRepository;
 import com.tallerpro.backend.repository.RelacionClienteVehiculoRepository;
 import com.tallerpro.backend.repository.VehiculoRepository;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,7 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.Year;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -43,16 +51,21 @@ public class VehiculoService {
     private final PermisoService permisoService;
     private final RelacionClienteVehiculoRepository relacionRepository;
     private final ClienteService clienteService;
+    private final HistorialEstatusVehiculoRepository historialRepository;
+    private final ObjectMapper objectMapper;
 
     public VehiculoService(VehiculoRepository vehiculoRepository, ClienteRepository clienteRepository,
                             EstatusRepository estatusRepository, PermisoService permisoService,
-                            RelacionClienteVehiculoRepository relacionRepository, ClienteService clienteService) {
+                            RelacionClienteVehiculoRepository relacionRepository, ClienteService clienteService,
+                            HistorialEstatusVehiculoRepository historialRepository, ObjectMapper objectMapper) {
         this.vehiculoRepository = vehiculoRepository;
         this.clienteRepository = clienteRepository;
         this.estatusRepository = estatusRepository;
         this.permisoService = permisoService;
         this.relacionRepository = relacionRepository;
         this.clienteService = clienteService;
+        this.historialRepository = historialRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -150,6 +163,11 @@ public class VehiculoService {
             throw new ApiException(HttpStatus.CONFLICT, "Ya existe un vehiculo registrado con esa placa.");
         }
 
+        Map<String, String[]> cambios = diferencias(vehiculo, datos);
+        if (cambios.isEmpty()) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "No se detectaron cambios.");
+        }
+
         vehiculo.setVin(datos.vin());
         vehiculo.setNumeroSerie(datos.numeroSerie());
         vehiculo.setPlaca(datos.placa());
@@ -164,7 +182,60 @@ public class VehiculoService {
         vehiculo.setActualizadoEn(LocalDateTime.now());
 
         vehiculo = vehiculoRepository.save(vehiculo);
+
+        // Edicion de datos, no una transicion real de estatus: usa el estatus de
+        // sistema ACTUALIZADO como marcador (mismo patron que ClienteService.actualizar,
+        // no altera vehiculo.estatus). Nunca toca ordenes (el proyecto no tiene ese modulo
+        // todavia): esta fila es auditoria de la ficha del vehiculo unicamente.
+        registrarHistorial(vehiculo, null, EstatusId.ACTUALIZADO, "Edicion de datos", aJson(cambios), actor);
+
         return VehiculoResponse.desde(vehiculo);
+    }
+
+    private Map<String, String[]> diferencias(Vehiculo antes, VehiculoRequest despues) {
+        Map<String, String[]> cambios = new LinkedHashMap<>();
+        agregarSiCambio(cambios, "VIN", antes.getVin(), despues.vin());
+        agregarSiCambio(cambios, "Numero de serie", antes.getNumeroSerie(), despues.numeroSerie());
+        agregarSiCambio(cambios, "Placa", antes.getPlaca(), despues.placa());
+        agregarSiCambio(cambios, "Anio", String.valueOf(antes.getAnio()), String.valueOf(despues.anio()));
+        agregarSiCambio(cambios, "Marca", antes.getMarca(), despues.marca());
+        agregarSiCambio(cambios, "Modelo", antes.getModelo(), despues.modelo());
+        agregarSiCambio(cambios, "Version", antes.getVersion(), despues.version());
+        agregarSiCambio(cambios, "Color", antes.getColor(), despues.color());
+        agregarSiCambio(cambios, "Kilometraje",
+                antes.getKilometraje() != null ? String.valueOf(antes.getKilometraje()) : null,
+                despues.kilometraje() != null ? String.valueOf(despues.kilometraje()) : null);
+        return cambios;
+    }
+
+    private void agregarSiCambio(Map<String, String[]> mapa, String etiqueta, String anterior, String nuevo) {
+        String a = (anterior == null || anterior.isBlank()) ? null : anterior;
+        String n = (nuevo == null || nuevo.isBlank()) ? null : nuevo;
+        if (!Objects.equals(a, n)) {
+            mapa.put(etiqueta, new String[]{ a == null ? "(vacio)" : a, n == null ? "(vacio)" : n });
+        }
+    }
+
+    private String aJson(Map<String, String[]> cambios) {
+        try {
+            return objectMapper.writeValueAsString(cambios);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void registrarHistorial(Vehiculo vehiculo, Long estatusAnteriorId, Long estatusNuevoId, String motivo, String cambiosJson, Usuario actor) {
+        Estatus nuevo = estatusRepository.getReferenceById(estatusNuevoId);
+        HistorialEstatusVehiculo historial = new HistorialEstatusVehiculo();
+        historial.setVehiculo(vehiculo);
+        if (estatusAnteriorId != null) {
+            historial.setEstatusAnterior(estatusRepository.getReferenceById(estatusAnteriorId));
+        }
+        historial.setEstatusNuevo(nuevo);
+        historial.setMotivo(motivo);
+        historial.setCambios(cambiosJson);
+        historial.setUsuario(actor);
+        historialRepository.save(historial);
     }
 
     /** UC-CV-13: vehiculos de un cliente, vigentes (su asociacion actual) e historicos (los que ya se le reasignaron a otro cliente). */
@@ -211,6 +282,53 @@ public class VehiculoService {
     @Transactional(readOnly = true)
     public DisponibilidadResponse verificarPlaca(String placa) {
         return new DisponibilidadResponse(placa == null || placa.isBlank() || !vehiculoRepository.existsByPlacaIgnoreCase(placa));
+    }
+
+    /** Desactiva un vehiculo (deja de estar ACTIVO). Preserva el historial: solo cambia el estatus, nunca borra nada. */
+    @Transactional
+    public VehiculoResponse desactivar(Long id, Usuario actor) {
+        Vehiculo vehiculo = buscarVisibleOFallar(id, actor);
+        int filas = vehiculoRepository.cambiarEstatusSiEsta(id, EstatusId.SUSPENDIDO, EstatusId.ACTIVO);
+        if (filas == 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "El vehiculo ya esta desactivado.");
+        }
+        registrarHistorial(vehiculo, EstatusId.ACTIVO, EstatusId.SUSPENDIDO, null, null, actor);
+        return obtener(id, actor);
+    }
+
+    /** Reactiva un vehiculo previamente desactivado. */
+    @Transactional
+    public VehiculoResponse activar(Long id, Usuario actor) {
+        Vehiculo vehiculo = buscarVisibleOFallar(id, actor);
+        int filas = vehiculoRepository.cambiarEstatusSiEsta(id, EstatusId.ACTIVO, EstatusId.SUSPENDIDO);
+        if (filas == 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "El vehiculo ya esta activo.");
+        }
+        registrarHistorial(vehiculo, EstatusId.SUSPENDIDO, EstatusId.ACTIVO, null, null, actor);
+        return obtener(id, actor);
+    }
+
+    /** Historial completo del vehiculo (altas, ediciones, activaciones/desactivaciones). Nunca se borra una fila. */
+    @Transactional(readOnly = true)
+    public List<HistorialEstatusVehiculoResponse> historial(Long id, Usuario actor) {
+        buscarVisibleOFallar(id, actor);
+        return historialRepository.findByVehiculo_IdOrderByCreadoEnDesc(id).stream()
+                .map(HistorialEstatusVehiculoResponse::desde)
+                .toList();
+    }
+
+    private Vehiculo buscarVisibleOFallar(Long id, Usuario actor) {
+        Vehiculo vehiculo = vehiculoRepository.findById(id)
+                .filter(v -> v.getEliminadoEn() == null)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No se encontro el vehiculo solicitado."));
+
+        if (!permisoService.tiene(actor, ClavePermiso.CLIENTES_TODOS_TALLERES)) {
+            Long tallerCliente = vehiculo.getCliente().getTaller() != null ? vehiculo.getCliente().getTaller().getId() : null;
+            if (tallerCliente == null || !tallerCliente.equals(actor.getTallerId())) {
+                throw new ApiException(HttpStatus.NOT_FOUND, "No se encontro el vehiculo solicitado.");
+            }
+        }
+        return vehiculo;
     }
 
     /** UC-CV-14: cliente vigente de un vehiculo (reusa ClienteService.obtener para respetar los mismos permisos/aislamiento). */

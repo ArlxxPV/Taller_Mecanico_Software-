@@ -4,6 +4,7 @@ import com.tallerpro.backend.model.Vehiculo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -54,4 +55,14 @@ public interface VehiculoRepository extends JpaRepository<Vehiculo, Long> {
     )
     Page<Vehiculo> buscar(@Param("tallerId") Long tallerId, @Param("estatusId") Long estatusId,
                            @Param("busqueda") String busqueda, Pageable pageable);
+
+    // UPDATE condicionado (atomico, mismo patron que ClienteRepository.cambiarEstatusSiEsta):
+    // 0 filas afectadas = o no existe, o no estaba en el estatus requerido; VehiculoService decide cual.
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            UPDATE vehiculos SET estatus_id = :nuevoEstatusId, actualizado_en = NOW()
+            WHERE id = :id AND estatus_id = :estatusRequeridoId AND eliminado_en IS NULL
+            """, nativeQuery = true)
+    int cambiarEstatusSiEsta(@Param("id") Long id, @Param("nuevoEstatusId") Long nuevoEstatusId,
+                              @Param("estatusRequeridoId") Long estatusRequeridoId);
 }

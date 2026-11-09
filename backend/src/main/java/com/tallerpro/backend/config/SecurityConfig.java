@@ -85,6 +85,9 @@ public class SecurityConfig {
                         // Editar un vehiculo o cambiar su cliente (UC-CV-12): igual permiso que asociarlo (ver arriba), no solo verlo.
                         .requestMatchers(HttpMethod.PUT, "/api/vehiculos/*").hasAnyAuthority("PERM_CLIENTES_CREAR", "PERM_CLIENTES_EDITAR")
                         .requestMatchers(HttpMethod.PATCH, "/api/vehiculos/*/cliente").hasAnyAuthority("PERM_CLIENTES_CREAR", "PERM_CLIENTES_EDITAR")
+                        // Activar/desactivar un vehiculo: mismo permiso que editarlo, no solo verlo.
+                        .requestMatchers(HttpMethod.PATCH, "/api/vehiculos/*/activar").hasAnyAuthority("PERM_CLIENTES_CREAR", "PERM_CLIENTES_EDITAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/vehiculos/*/desactivar").hasAnyAuthority("PERM_CLIENTES_CREAR", "PERM_CLIENTES_EDITAR")
                         // Pantalla "Vehiculos" (consulta y edicion): mismo aislamiento por taller que clientes.
                         .requestMatchers("/api/vehiculos/**").hasAnyAuthority("PERM_CLIENTES_VER", "PERM_CLIENTES_CREAR", "PERM_CLIENTES_EDITAR")
                         // Indicadores y "ultimos movimientos" del panel: solo quien ve clientes (el panel

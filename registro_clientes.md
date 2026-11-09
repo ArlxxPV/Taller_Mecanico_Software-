@@ -3,8 +3,9 @@
 Documento de cierre de la parte de **administración de clientes** y **panel** del trabajo
 basado en las maquetas "Pantallas fase 2". La parte de catálogo de estatus y vehículos
 está en el documento hermano `registro_vehiculo_estatus.md` (ahí vive también el diseño
-visual compartido: `AppLayout.vue`, paleta, tipografía). Verificado con `curl` contra el
-backend real al cierre de cada sub-fase.
+visual compartido: `AppLayout.vue`, paleta, tipografía). Roles configurables, personal y
+edición de talleres están en `registro_roles_y_talleres.md`. Verificado con `curl` contra
+el backend real al cierre de cada sub-fase.
 
 ## 1. Resumen ejecutivo
 
@@ -77,10 +78,12 @@ intacto**: ya no lo llama ninguna pantalla, pero sigue respondiendo 200 si algui
 TallerLista,TallerRegistro,Dashboard}View.vue`, `components/ClienteFormularioCampos.vue`,
 `router/index.js` (Clientes y Talleres ahora dentro de `AppLayout`).
 
-**Sin tocar, a propósito**: `views/ClienteEditarView.vue` (ruta `/clientes/:id/editar`
-sigue existiendo, ya no la usa la UI nueva, la reemplazó el modal de edición),
-`views/PersonalView.vue` (no estaba en las maquetas de esta fase, se queda como pantalla
-independiente).
+**Agregado después (ya no aplica "sin tocar")**: `views/ClienteEditarView.vue` se movió
+dentro de `AppLayout` y se rediseñó con las clases `.tp` (sigue existiendo, se llega desde
+el botón "Editar" del detalle de cliente, aparte del modal de edición de la lista).
+`views/PersonalView.vue` también se movió dentro de `AppLayout` y se rediseñó igual.
+Además, el detalle de cliente ahora tiene un visor de foto en grande
+(`components/ModalFotoAmpliada.vue`), reutilizado también en la lista de talleres.
 
 ## 6. Verificación
 
@@ -104,9 +107,10 @@ puedas). Sin navegador disponible en este entorno: solo verificación de API, no
   estatus que el cliente tenía *al momento de migrar*, no con el que tenía al registrarse:
   un cliente que ya estaba suspendido antes de esta fase muestra una fila "SUSPENDIDO /
   Alta" en su historial. Es cosmético (solo en datos que ya existían), no afecta lógica.
-- No existe ningún taller registrado en la base de datos de este entorno, ni la cuenta de
-  recepción tiene uno asignado: no se pudo probar en vivo el aislamiento por taller de
-  suspender/reactivar con esa cuenta (sí se probó por código/configuración). Es una
-  limitación de los datos de prueba, no de esta fase.
+- Ya existen talleres registrados en este entorno (Taller Centro, Taller Norte), pero la
+  cuenta de recepción sigue sin uno asignado: sigue sin probarse en vivo el aislamiento por
+  taller de suspender/reactivar con una cuenta real de recepcionista (sí se probó por
+  código/configuración, y el mismo patrón se volvió a probar por código en los endpoints
+  de vehículos nuevos — ver `registro_vehiculo_estatus.md`).
 - El Flyway sigue sin correr solo con `mvn spring-boot:run` (problema heredado, ver
   `registro_Fase02.md`): toda migración de V10 a V14 se aplicó a mano.
