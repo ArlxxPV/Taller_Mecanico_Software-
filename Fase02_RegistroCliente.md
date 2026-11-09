@@ -62,7 +62,8 @@ El módulo de cuentas **ya usaba** una Vista y un Repository, pero las Vistas ll
 | `ClienteController` | `obtener(id)` — `GET /api/clientes/{id}` | el id en la URL | `ClienteResponse`; 404 si no existe |
 | | `actualizar(id, datos, foto)` — `PUT /api/clientes/{id}` | igual que crear, pero `foto` es opcional (si no se manda, se conserva la que ya tenía) | `ClienteResponse` actualizado; 409 si el correo ya lo usa *otro* cliente |
 | | `obtenerFoto(id)` — `GET /api/clientes/{id}/foto` | el id en la URL | el archivo de la foto (bytes), con su tipo correcto (`image/jpeg` o `image/png`); 404 si no tiene foto |
-| `ClienteService` | `obtener(id)`, `actualizar(id, datos, foto)`, `obtenerRutaFoto(id)` | — | Al reemplazar una foto, borra el archivo anterior del disco para no dejar huérfanos. |
+| `ClienteService` | `obtener(id)`, `actualizar(id, datos, foto)`, `obtenerFoto(id)` | — | Al reemplazar una foto, borra la anterior de Cloudinary (solo cuando la transacción se confirma) para no dejar huérfanas. |
+| `AlmacenFotosService` *(agregado después, 08-nov-2026)* | `subir`, `descargar`, `borrarAlConfirmar` | — | Guarda las fotos en Cloudinary como tipo `authenticated` (privadas) y `foto_url` guarda el `public_id`. Lo usan también los talleres. |
 | `ClienteRepository` | `existsByEmailIgnoreCaseAndIdNot(email, id)` | correo e id a excluir | `true`/`false` — para que un cliente pueda guardarse con su propio correo sin marcarse como duplicado |
 | `repositories/clienteRepository.js` | `obtener(id)`, `actualizar(id, datos, foto)`, `obtenerFotoBlob(id)` | — | la última pide la foto como *blob* (binario), no como URL directa |
 | `facades/clienteFacade.js` | `obtener(id)` | id | `{ ok, cliente?, formulario?, mensaje? }` — `formulario` ya viene listo para precargar la pantalla de editar |
@@ -72,6 +73,8 @@ El módulo de cuentas **ya usaba** una Vista y un Repository, pero las Vistas ll
 | `views/ClienteEditarView.vue` *(nuevo)* | `cargar()`, `enviar()` | — | precarga el formulario con los datos actuales (y la foto, si tiene) y guarda los cambios; si el usuario no elige una foto nueva, la que ya tenía se mantiene igual |
 
 **Nota sobre la foto:** no es una URL pública — el navegador la pide con el token de sesión (igual que cualquier otro dato) y la convierte en una imagen local. Así, alguien que no inició sesión como ADMIN/RECEPCIONISTA no puede ver fotos de clientes solo adivinando una URL.
+
+**Dónde se guardan (cambio del 08-nov-2026):** al principio las fotos se guardaban en `uploads/` en el disco del backend. Al desplegar en Railway eso dejó de servir, porque el disco del contenedor se borra en cada deploy. Ahora viven en Cloudinary, subidas como `authenticated`, así que Cloudinary tampoco las publica. El backend las descarga con una URL firmada y las sigue entregando por `GET /api/clientes/{id}/foto`, por lo que el frontend no cambió. La credencial se configura con la variable de entorno `CLOUDINARY_URL`. Si falta, la app arranca igual, pero subir o ver fotos responde 503. Las fotos que estaban en `uploads/` no se migraron: en una base que todavía las tenga, `GET /foto` responde 404.
 
 ---
 

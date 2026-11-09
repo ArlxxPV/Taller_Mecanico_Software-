@@ -61,13 +61,17 @@ tallerpro:
   reset-password:
     minutos-expiracion: 30
     url-frontend: "http://localhost:5173/restablecer-password"
+  # Las fotos de clientes y talleres viven en Cloudinary (ver AlmacenFotosService),
+  # no en disco: en Railway el disco del contenedor se borra en cada deploy.
+  cloudinary:
+    # "API environment variable" del dashboard de Cloudinary: cloudinary://<key>:<secret>@<cloud>.
+    # Se toma de la variable de entorno CLOUDINARY_URL (o de application-secrets.yml en local).
+    # Si queda vacia la app arranca igual, pero subir/ver fotos responde 503.
+    url: ${CLOUDINARY_URL:}
+    carpeta: tallerpro
   archivos:
-    # Ruta relativa a donde se ejecuta el backend. En produccion conviene
-    # usar una ruta absoluta fuera del directorio de la app.
-    directorio-fotos-clientes: uploads/clientes
     foto-max-bytes: 12582912   # 12 MB
   talleres:
-    directorio-fotos-talleres: uploads/talleres
     foto-max-bytes: 15728640   # 15 MB
 
 logging:

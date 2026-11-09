@@ -17,10 +17,11 @@ import com.tallerpro.backend.dto.VehiculoRequest;
 import com.tallerpro.backend.dto.VehiculoResponse;
 import com.tallerpro.backend.model.Usuario;
 import com.tallerpro.backend.repository.UsuarioRepository;
+import com.tallerpro.backend.service.AlmacenFotosService;
 import com.tallerpro.backend.service.ClienteService;
 import com.tallerpro.backend.service.VehiculoService;
 import jakarta.validation.Valid;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,7 +30,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -148,9 +148,8 @@ public class ClienteController {
 
     @GetMapping("/{id}/foto")
     public ResponseEntity<Resource> obtenerFoto(@PathVariable Long id) {
-        Path ruta = clienteService.obtenerRutaFoto(id);
-        MediaType tipo = ruta.toString().endsWith(".png") ? MediaType.IMAGE_PNG : MediaType.IMAGE_JPEG;
-        return ResponseEntity.ok().contentType(tipo).body(new FileSystemResource(ruta));
+        AlmacenFotosService.Foto foto = clienteService.obtenerFoto(id);
+        return ResponseEntity.ok().contentType(foto.tipo()).body(new ByteArrayResource(foto.contenido()));
     }
 
     /** Clientes dados de alta por personal que todavia no pueden iniciar sesion - ver SecurityConfig: USUARIOS_CREAR. */

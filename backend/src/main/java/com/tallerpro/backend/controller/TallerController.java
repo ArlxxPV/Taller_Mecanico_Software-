@@ -2,9 +2,10 @@ package com.tallerpro.backend.controller;
 
 import com.tallerpro.backend.dto.TallerRequest;
 import com.tallerpro.backend.dto.TallerResponse;
+import com.tallerpro.backend.service.AlmacenFotosService;
 import com.tallerpro.backend.service.TallerService;
 import jakarta.validation.Valid;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -58,8 +58,7 @@ public class TallerController {
 
     @GetMapping("/{id}/foto")
     public ResponseEntity<Resource> obtenerFoto(@PathVariable Long id) {
-        Path ruta = tallerService.obtenerRutaFoto(id);
-        MediaType tipo = ruta.toString().endsWith(".png") ? MediaType.IMAGE_PNG : MediaType.IMAGE_JPEG;
-        return ResponseEntity.ok().contentType(tipo).body(new FileSystemResource(ruta));
+        AlmacenFotosService.Foto foto = tallerService.obtenerFoto(id);
+        return ResponseEntity.ok().contentType(foto.tipo()).body(new ByteArrayResource(foto.contenido()));
     }
 }

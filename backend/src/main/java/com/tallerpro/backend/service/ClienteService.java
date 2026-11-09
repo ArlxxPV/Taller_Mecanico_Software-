@@ -38,9 +38,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -48,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -69,12 +65,14 @@ public class ClienteService {
     private final EstatusRepository estatusRepository;
     private final HistorialEstatusClienteRepository historialRepository;
     private final ObjectMapper objectMapper;
+    private final AlmacenFotosService almacenFotos;
 
     public ClienteService(ClienteRepository clienteRepository, TallerRepository tallerRepository,
                            ArchivosProperties archivosProperties, PermisoService permisoService,
                            UsuarioRepository usuarioRepository, RolRepository rolRepository,
                            PasswordEncoder passwordEncoder, EstatusRepository estatusRepository,
-                           HistorialEstatusClienteRepository historialRepository, ObjectMapper objectMapper) {
+                           HistorialEstatusClienteRepository historialRepository, ObjectMapper objectMapper,
+                           AlmacenFotosService almacenFotos) {
         this.clienteRepository = clienteRepository;
         this.tallerRepository = tallerRepository;
         this.archivosProperties = archivosProperties;
@@ -85,6 +83,7 @@ public class ClienteService {
         this.estatusRepository = estatusRepository;
         this.historialRepository = historialRepository;
         this.objectMapper = objectMapper;
+        this.almacenFotos = almacenFotos;
     }
 
     @Transactional
@@ -347,16 +346,17 @@ public class ClienteService {
     }
 
     /**
-     * Ruta en disco de la foto de un cliente, para que el controller la
-     * transmita. Lanza 404 si el cliente no existe o no tiene foto guardada.
+     * Foto de un cliente (bytes y tipo), descargada de Cloudinary para que el
+     * controller la transmita. Lanza 404 si el cliente no existe o no tiene foto.
+     * Sin @Transactional a proposito: la descarga es una llamada remota y no debe
+     * tener una conexion de BD apartada mientras tanto.
      */
-    @Transactional(readOnly = true)
-    public Path obtenerRutaFoto(Long id) {
+    public AlmacenFotosService.Foto obtenerFoto(Long id) {
         Cliente cliente = buscarOFallar(id);
         if (cliente.getFotoUrl() == null) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Este cliente no tiene una foto registrada.");
         }
-        return Path.of(archivosProperties.directorioFotosClientes()).resolve(cliente.getFotoUrl());
+        return almacenFotos.descargar(cliente.getFotoUrl());
     }
 
     private Cliente buscarOFallar(Long id) {
@@ -512,27 +512,10 @@ public class ClienteService {
         if (foto.getSize() > archivosProperties.fotoMaxBytes()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La foto no debe superar 12 MB.");
         }
-
-        String extension = tipo.equals("image/png") ? ".png" : ".jpg";
-        String nombreArchivo = UUID.randomUUID() + extension;
-
-        try {
-            Path directorio = Path.of(archivosProperties.directorioFotosClientes());
-            Files.createDirectories(directorio);
-            Path destino = directorio.resolve(nombreArchivo);
-            foto.transferTo(destino);
-            return nombreArchivo;
-        } catch (IOException e) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo guardar la foto. Intenta de nuevo.");
-        }
+        return almacenFotos.subir(foto, "clientes");
     }
 
-    private void borrarFotoSiExiste(String nombreArchivo) {
-        try {
-            Files.deleteIfExists(Path.of(archivosProperties.directorioFotosClientes()).resolve(nombreArchivo));
-        } catch (IOException e) {
-            // No es un error fatal: el cliente ya se actualizo bien, solo queda un
-            // archivo huerfano en disco que no afecta el funcionamiento de la app.
-        }
+    private void borrarFotoSiExiste(String publicId) {
+        almacenFotos.borrarAlConfirmar(publicId);
     }
 }

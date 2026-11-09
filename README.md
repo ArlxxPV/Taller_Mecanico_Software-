@@ -100,8 +100,13 @@ Desde VS Code, abre la carpeta `backend/` (con la extensión "Extension Pack for
 o desde una terminal:
 
 Antes de arrancar, copia `backend/src/main/resources/application-secrets.yml.example` como
-`application-secrets.yml` (en esa misma carpeta) y pon ahí tus credenciales reales de MySQL y
-una clave JWT propia — ese archivo está en `.gitignore`, nunca se sube al repositorio.
+`application-secrets.yml` (en esa misma carpeta) y pon ahí tus credenciales reales de MySQL,
+una clave JWT propia y la URL de Cloudinary — ese archivo está en `.gitignore`, nunca se sube al repositorio.
+
+Las fotos de clientes y talleres se guardan en Cloudinary, no en disco. La URL es la
+"API environment variable" del dashboard de Cloudinary (`cloudinary://<api_key>:<api_secret>@<cloud_name>`).
+En un despliegue se pasa con la variable de entorno `CLOUDINARY_URL`. Sin ella, el backend arranca
+igual, pero subir o ver fotos responde 503.
 
 ```bash
 cd backend

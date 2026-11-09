@@ -13,12 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 public class TallerService {
@@ -27,10 +23,13 @@ public class TallerService {
 
     private final TallerRepository tallerRepository;
     private final TallerArchivosProperties archivosProperties;
+    private final AlmacenFotosService almacenFotos;
 
-    public TallerService(TallerRepository tallerRepository, TallerArchivosProperties archivosProperties) {
+    public TallerService(TallerRepository tallerRepository, TallerArchivosProperties archivosProperties,
+                         AlmacenFotosService almacenFotos) {
         this.tallerRepository = tallerRepository;
         this.archivosProperties = archivosProperties;
+        this.almacenFotos = almacenFotos;
     }
 
     @Transactional
@@ -90,13 +89,13 @@ public class TallerService {
         return TallerResponse.desde(taller);
     }
 
-    @Transactional(readOnly = true)
-    public Path obtenerRutaFoto(Long id) {
+    /** Sin @Transactional: la descarga de Cloudinary es remota (ver ClienteService.obtenerFoto). */
+    public AlmacenFotosService.Foto obtenerFoto(Long id) {
         Taller taller = buscarOFallar(id);
         if (taller.getFotoUrl() == null) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Este taller no tiene una foto registrada.");
         }
-        return Path.of(archivosProperties.directorioFotosTalleres()).resolve(taller.getFotoUrl());
+        return almacenFotos.descargar(taller.getFotoUrl());
     }
 
     private Taller buscarOFallar(Long id) {
@@ -127,26 +126,10 @@ public class TallerService {
         if (foto.getSize() > archivosProperties.fotoMaxBytes()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La foto no debe superar 15 MB.");
         }
-
-        String extension = tipo.equals("image/png") ? ".png" : ".jpg";
-        String nombreArchivo = UUID.randomUUID() + extension;
-
-        try {
-            Path directorio = Path.of(archivosProperties.directorioFotosTalleres());
-            Files.createDirectories(directorio);
-            Path destino = directorio.resolve(nombreArchivo);
-            foto.transferTo(destino);
-            return nombreArchivo;
-        } catch (IOException e) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo guardar la foto. Intenta de nuevo.");
-        }
+        return almacenFotos.subir(foto, "talleres");
     }
 
-    private void borrarFotoSiExiste(String nombreArchivo) {
-        try {
-            Files.deleteIfExists(Path.of(archivosProperties.directorioFotosTalleres()).resolve(nombreArchivo));
-        } catch (IOException e) {
-            // No es fatal: queda un archivo huerfano en disco, no afecta el funcionamiento.
-        }
+    private void borrarFotoSiExiste(String publicId) {
+        almacenFotos.borrarAlConfirmar(publicId);
     }
 }
