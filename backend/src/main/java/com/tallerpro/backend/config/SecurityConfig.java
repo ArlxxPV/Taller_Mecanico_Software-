@@ -2,6 +2,7 @@ package com.tallerpro.backend.config;
 
 import com.tallerpro.backend.security.AppUserDetailsService;
 import com.tallerpro.backend.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,10 +34,14 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AppUserDetailsService userDetailsService;
+    private final List<String> origenesPermitidos;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, AppUserDetailsService userDetailsService) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          AppUserDetailsService userDetailsService,
+                          @Value("${tallerpro.cors.origenes}") List<String> origenesPermitidos) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.userDetailsService = userDetailsService;
+        this.origenesPermitidos = origenesPermitidos;
     }
 
     @Bean
@@ -108,9 +113,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Origen del servidor de desarrollo de Vite. Agrega aqui el dominio real
-        // cuando despliegues el frontend a produccion.
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        // Origenes desde tallerpro.cors.origenes (application.yml). En produccion se
+        // sobreescribe con la variable de entorno TALLERPRO_CORS_ORIGENES, separando
+        // varios dominios con comas.
+        config.setAllowedOrigins(origenesPermitidos);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

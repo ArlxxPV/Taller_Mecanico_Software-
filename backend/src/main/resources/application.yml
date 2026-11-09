@@ -1,5 +1,6 @@
 server:
-  port: 8081
+  # Railway (y otros PaaS) asignan el puerto con la variable PORT; en local se usa 8081.
+  port: ${PORT:8081}
 
 spring:
   application:
@@ -47,6 +48,10 @@ spring:
 
 # --- Configuracion propia de la app ---
 tallerpro:
+  cors:
+    # Dominios del frontend que pueden llamar a la API, separados por comas.
+    # En produccion: variable de entorno TALLERPRO_CORS_ORIGENES.
+    origenes: http://localhost:5173
   jwt:
     # El valor real vive en application-secrets.yml (ignorado por git).
     expiracion-minutos: 30
